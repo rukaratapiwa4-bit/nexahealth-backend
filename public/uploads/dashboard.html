@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – NexaHealth</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+    body { background:#f2f5f9; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .card { max-width:500px; width:100%; background:#fff; border-radius:32px; box-shadow:0 12px 40px rgba(0,0,0,0.06); padding:40px 32px; text-align:center; }
+    .brand { margin-bottom:20px; }
+    .brand h1 { font-size:28px; font-weight:600; color:#0b2b44; }
+    .brand h1 span { color:#0088cc; }
+    .welcome { font-size:20px; font-weight:600; color:#0b2b44; margin-bottom:8px; }
+    .user-info { background:#f7f9fc; border-radius:16px; padding:20px; margin:20px 0; text-align:left; }
+    .user-info p { margin:8px 0; font-size:15px; color:#1e2f3f; }
+    .user-info strong { color:#6b7a8f; display:inline-block; width:120px; }
+    .btn { display:inline-block; background:#0088cc; color:#fff; border:none; border-radius:16px; padding:14px 28px; font-size:16px; font-weight:600; cursor:pointer; transition:background .2s; text-decoration:none; margin:4px; }
+    .btn:hover { background:#0073b0; }
+    .btn-danger { background:#e74c3c; }
+    .btn-danger:hover { background:#c0392b; }
+    .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge.pharmacy { background:#e8f4fd; color:#1a7abf; }
+    .badge.wholesaler { background:#f0e8ff; color:#7c3aed; }
+    .badge.mcaz { background:#e8fff4; color:#059669; }
+    .badge.logistics { background:#fff7e0; color:#d97706; }
+    .badge.pending { background:#fff3e0; color:#e67e22; }
+    .badge.approved { background:#eafaf4; color:#1e9b6e; }
+    .badge.rejected { background:#fff0ee; color:#c0392b; }
+    .status { margin-top:10px; }
+    .footer { margin-top:20px; font-size:14px; color:#6b7a8f; }
+    .footer a { color:#0088cc; text-decoration:none; }
+    .footer a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="brand">
+    <h1>Nexa<span>Health</span></h1>
+  </div>
+
+  <div class="welcome" id="welcomeMessage">Loading…</div>
+  <p style="color:#6b7a8f;font-size:14px;">Your account is ready</p>
+
+  <div class="user-info" id="userInfo">
+    <p><strong>User Type:</strong> <span id="userType"></span></p>
+    <p><strong>Full Name:</strong> <span id="fullName"></span></p>
+    <p><strong>Email:</strong> <span id="email"></span></p>
+    <p><strong>Business:</strong> <span id="businessName"></span></p>
+    <p><strong>Status:</strong> <span id="accountStatus"></span></p>
+  </div>
+
+  <div>
+    <a href="admin-dashboard.html" class="btn btn-outline" id="adminLink">Admin Dashboard</a>
+    <button class="btn btn-danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+
+  <div class="footer">
+    <a href="/">← Back to Home</a>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('nexa_token');
+  const user = JSON.parse(localStorage.getItem('nexa_user') || 'null');
+
+  if (!token || !user) {
+    window.location.href = '/';
+  }
+
+  document.getElementById('welcomeMessage').textContent = `Welcome, ${user.fullName}!`;
+  document.getElementById('userType').textContent = user.userType;
+  document.getElementById('fullName').textContent = user.fullName;
+  document.getElementById('email').textContent = user.email;
+  document.getElementById('businessName').textContent = user.businessName;
+
+  const statusEl = document.getElementById('accountStatus');
+  let statusText = user.isApproved ? '✅ Approved' : '⏳ Pending Approval';
+  let statusClass = user.isApproved ? 'badge approved' : 'badge pending';
+  if (!user.isActive) {
+    statusText = '❌ Rejected';
+    statusClass = 'badge rejected';
+  }
+  statusEl.innerHTML = `<span class="${statusClass}">${statusText}</span>`;
+
+  // Show admin link only for MCAZ
+  if (user.userType !== 'mcaz') {
+    document.getElementById('adminLink').style.display = 'none';
+  }
+
+  function logout() {
+    localStorage.removeItem('nexa_token');
+    localStorage.removeItem('nexa_user');
+    window.location.href = '/';
+  }
+</script>
+
+</body>
+</html>

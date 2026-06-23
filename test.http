@@ -1,0 +1,104 @@
+### ============================================
+### NEXAHEALTH API TESTING
+### ============================================
+
+### 1. Health Check (GET)
+GET http://localhost:5000/
+
+### ============================================
+### 2. REGISTER A NEW USER (POST)
+### ============================================
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "userType": "pharmacy",
+  "fullName": "John Smith",
+  "email": "john@citypharmacy.co.zw",
+  "phone": "+263712345678",
+  "businessName": "City Pharmacy",
+  "password": "SecurePass123!",
+  "country": "Zimbabwe",
+  "city": "Harare",
+  "address": "123 Samora Machel Ave, Borrowdale",
+  "termsAccepted": true,
+  "privacyAccepted": true
+}
+
+### ============================================
+### 3. LOGIN (POST)
+### ============================================
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@citypharmacy.co.zw",
+  "password": "SecurePass123!"
+}
+
+### ============================================
+### 4. GET CURRENT USER (GET) - Requires Token
+### ============================================
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### 5. FORGOT PASSWORD (POST)
+### ============================================
+POST http://localhost:5000/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "john@citypharmacy.co.zw"
+}
+
+### ============================================
+### 6. RESET PASSWORD (PUT)
+### ============================================
+PUT http://localhost:5000/api/auth/reset-password/YOUR_RESET_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "password": "NewSecurePass123!",
+  "confirmPassword": "NewSecurePass123!"
+}
+
+### ============================================
+### 7. REGISTER WHOLESALER (POST)
+### ============================================
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "userType": "wholesaler",
+  "fullName": "Sarah Johnson",
+  "email": "sarah@medsupply.co.zw",
+  "phone": "+263712345679",
+  "businessName": "MedSupply Zimbabwe",
+  "password": "SecurePass123!",
+  "country": "Zimbabwe",
+  "city": "Bulawayo",
+  "address": "456 Robert Mugabe Way",
+  "termsAccepted": true,
+  "privacyAccepted": true
+}
+
+### ============================================
+### 8. REGISTER MCAZ USER (POST)
+### ============================================
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "userType": "mcaz",
+  "fullName": "Dr. Tendai Makoni",
+  "email": "tendai@mcaz.co.zw",
+  "phone": "+263712345680",
+  "businessName": "MCAZ Zimbabwe",
+  "password": "SecurePass123!",
+  "country": "Zimbabwe",
+  "city": "Harare",
+  "address": "123 MCAZ Building, Causeway",
+  "termsAccepted": true,
+  "privacyAccepted": true
+}
