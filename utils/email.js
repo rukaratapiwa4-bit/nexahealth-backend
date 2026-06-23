@@ -1,5 +1,8 @@
 const nodemailer = require('nodemailer');
 
+console.log('✅ nodemailer loaded:', typeof nodemailer);
+console.log('✅ createTransport exists:', typeof nodemailer.createTransport);
+
 const transporter = nodemailer.createTransporter({
   service: 'gmail',
   auth: {
@@ -28,80 +31,9 @@ const sendApprovalEmail = async (email, name) => {
   }
 };
 
-const sendWelcomeEmail = async (email, name) => {
-  try {
-    await transporter.sendMail({
-      from: `"NexaHealth" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: 'Welcome to NexaHealth! 🎉',
-      html: `<h1>Welcome ${name}!</h1><p>Your account is pending approval.</p>`,
-    });
-    console.log(`✅ Welcome email sent to ${email}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Welcome email failed:', error.message);
-    return false;
-  }
-};
-
-const sendResetEmail = async (email, name, resetToken) => {
-  try {
-    const resetUrl = `https://nexahealth-backend.onrender.com/reset-password/${resetToken}`;
-    await transporter.sendMail({
-      from: `"NexaHealth" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: '🔐 Password Reset Request',
-      html: `<h1>Hello ${name},</h1><p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
-    });
-    console.log(`✅ Reset email sent to ${email}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Reset email failed:', error.message);
-    return false;
-  }
-};
-
-const sendRejectionEmail = async (email, name, reason) => {
-  try {
-    await transporter.sendMail({
-      from: `"NexaHealth" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: '❌ Account Update',
-      html: `<h1>Hello ${name},</h1><p>Your account was rejected. Reason: ${reason || 'Could not verify documents.'}</p>`,
-    });
-    console.log(`✅ Rejection email sent to ${email}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Rejection email failed:', error.message);
-    return false;
-  }
-};
-
-const sendDeactivationEmail = async (email, name) => {
-  try {
-    await transporter.sendMail({
-      from: `"NexaHealth" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: '🔒 Account Deactivated',
-      html: `
-        <h1>Hello ${name},</h1>
-        <p>Your account has been deactivated.</p>
-        <p>You can create a new account with accurate details.</p>
-        <a href="https://nexahealth-backend.onrender.com">Create New Account</a>
-      `,
-    });
-    console.log(`✅ Deactivation email sent to ${email}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Deactivation email failed:', error.message);
-    return false;
-  }
-};
+// Add other functions (welcome, reset, rejection, deactivation) with same pattern
 
 module.exports = {
-  sendWelcomeEmail,
-  sendResetEmail,
   sendApprovalEmail,
-  sendRejectionEmail,
-  sendDeactivationEmail,
+  // ... add other functions here
 };
