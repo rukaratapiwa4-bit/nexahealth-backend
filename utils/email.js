@@ -1,28 +1,55 @@
 /**
  * NexaHealth — utils/email.js
- * Uses Resend (HTTP API) instead of Gmail SMTP.
- * Render blocks/throttles outbound SMTP connections — Resend works over
- * plain HTTPS so it is not affected by that restriction.
+ * Uses Brevo (formerly Sendinblue) HTTP API — not SMTP.
+ * Render blocks/throttles outbound SMTP connections, which is why the
+ * original Gmail nodemailer setup failed with "Connection timeout".
+ * Brevo's API works over plain HTTPS, same as your MongoDB Atlas connection.
  *
- * Required .env / Render environment variable:
- *   RESEND_API_KEY=re_xxxxxxxxxxxx      (already set on Render)
+ * Required Render environment variable:
+ *   BREVO_API_KEY=xkeysib-xxxxxxxxxxxx
  *   FRONTEND_URL=https://nexahealth-backend.onrender.com
  *
- * Same 5 exports as before — nothing else in your app needs to change.
+ * Sender must be verified in Brevo (Settings → Senders & IP → Senders).
+ * No domain required — a single verified email address works fine.
  *
- * NOTE: Until you verify your own domain on resend.com, all emails must be
- * sent FROM "onboarding@resend.dev". This is Resend's free shared sender
- * for unverified accounts. Once you verify a domain (e.g. nexahealth.co.zw),
- * change FROM below to "NexaHealth <noreply@nexahealth.co.zw>".
+ * Same 5 exports as before — nothing else in your app needs to change.
  */
 
-const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
+const SENDER_EMAIL = process.env.EMAIL_USER || 'rukaratapiwa4@gmail.com';
+const SENDER_NAME   = 'NexaHealth';
+const SITE_URL       = process.env.FRONTEND_URL || 'https://nexahealth-backend.onrender.com';
+const BREVO_API_KEY  = process.env.BREVO_API_KEY;
+const BREVO_URL      = 'https://api.brevo.com/v3/smtp/email';
 
-const FROM     = 'NexaHealth <onboarding@resend.dev>';
-const SITE_URL = process.env.FRONTEND_URL || 'https://nexahealth-backend.onrender.com';
-const PRIMARY  = '#0088cc';
-const DARK     = '#0b2b44';
+const PRIMARY = '#0088cc';
+const DARK    = '#0b2b44';
+
+/* ─────────────────────────────────────────────────────────────
+   CORE SENDER — calls Brevo's HTTP API directly (built-in fetch,
+   Node 18+, no extra npm package needed)
+───────────────────────────────────────────────────────────── */
+async function sendViaBrevo(to, subject, html) {
+  const res = await fetch(BREVO_URL, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'content-type': 'application/json',
+      'api-key': BREVO_API_KEY,
+    },
+    body: JSON.stringify({
+      sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Brevo API error (${res.status}): ${errText}`);
+  }
+  return res.json();
+}
 
 /* ─────────────────────────────────────────────────────────────
    SHARED HTML WRAPPER
@@ -118,12 +145,7 @@ const sendWelcomeEmail = async (email, name, userType = '') => {
   `;
 
   try {
-    await resend.emails.send({
-      from: FROM,
-      to: email,
-      subject: '🎉 Welcome to NexaHealth — Account Under Review',
-      html: buildEmail(`Welcome ${name}! Your NexaHealth account is under review — approval within 24–48 hours.`, body),
-    });
+    await sendViaBrevo(email, '🎉 Welcome to NexaHealth — Account Under Review', buildEmail(`Welcome ${name}! Your NexaHealth account is under review — approval within 24–48 hours.`, body));
     console.log(`✅ Welcome email sent to ${email}`);
     return true;
   } catch (err) {
@@ -154,12 +176,7 @@ const sendApprovalEmail = async (email, name) => {
   `;
 
   try {
-    await resend.emails.send({
-      from: FROM,
-      to: email,
-      subject: "✅ NexaHealth Account Approved — You're in!",
-      html: buildEmail(`Great news ${name}! Your NexaHealth account is approved. Sign in now.`, body),
-    });
+    await sendViaBrevo(email, "✅ NexaHealth Account Approved — You're in!", buildEmail(`Great news ${name}! Your NexaHealth account is approved. Sign in now.`, body));
     console.log(`✅ Approval email sent to ${email}`);
     return true;
   } catch (err) {
@@ -189,12 +206,7 @@ const sendResetEmail = async (email, name, resetToken) => {
   `;
 
   try {
-    await resend.emails.send({
-      from: FROM,
-      to: email,
-      subject: '🔐 Reset your NexaHealth password',
-      html: buildEmail(`Reset your NexaHealth password — link expires in 3 minutes.`, body),
-    });
+    await sendViaBrevo(email, '🔐 Reset your NexaHealth password', buildEmail(`Reset your NexaHealth password — link expires in 3 minutes.`, body));
     console.log(`✅ Reset email sent to ${email}`);
     return true;
   } catch (err) {
@@ -229,12 +241,7 @@ const sendRejectionEmail = async (email, name, reason) => {
   `;
 
   try {
-    await resend.emails.send({
-      from: FROM,
-      to: email,
-      subject: 'NexaHealth — Application Update',
-      html: buildEmail(`Update regarding your NexaHealth account application.`, body),
-    });
+    await sendViaBrevo(email, 'NexaHealth — Application Update', buildEmail(`Update regarding your NexaHealth account application.`, body));
     console.log(`✅ Rejection email sent to ${email}`);
     return true;
   } catch (err) {
@@ -267,12 +274,7 @@ const sendDeactivationEmail = async (email, name) => {
   `;
 
   try {
-    await resend.emails.send({
-      from: FROM,
-      to: email,
-      subject: '🔒 NexaHealth Account Deactivated',
-      html: buildEmail(`Your NexaHealth account has been deactivated. Contact support if this is an error.`, body),
-    });
+    await sendViaBrevo(email, '🔒 NexaHealth Account Deactivated', buildEmail(`Your NexaHealth account has been deactivated. Contact support if this is an error.`, body));
     console.log(`✅ Deactivation email sent to ${email}`);
     return true;
   } catch (err) {
