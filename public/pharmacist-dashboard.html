@@ -1133,8 +1133,8 @@ async function loadRealData(){
     }
 
     // Re-render whatever is currently on screen with the real data now loaded
-    document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
-    document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+    document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.length ? MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('') : renderOrdersEmpty(6);
+    document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.length ? MOCK_ORDERS.map(o=>orderRow(o,true)).join('') : renderOrdersEmpty(7);
     if (typeof renderApplications === 'function') renderApplications('all');
   } catch (err) {
     console.error('Failed to load real data, dashboard is showing mock data as fallback:', err.message);
@@ -1150,25 +1150,9 @@ async function loadRealData(){
    CATALOGUE_ITEMS remain mock until wholesalers add real stock.
    ========================================================================= */
 
-const MOCK_ORDERS = [
-  {id:'ORD-1042', supplier:'MedPharm Wholesale', items:'Amoxicillin 500mg ×500', total:'$225.00', status:'transit', date:'Jul 5, 2026'},
-  {id:'ORD-1041', supplier:'ZimDrug Distributors', items:'Paracetamol 500mg ×1000', total:'$450.00', status:'confirmed', date:'Jul 4, 2026'},
-  {id:'ORD-1039', supplier:'HealthLink Suppliers', items:'ORS Sachets ×300', total:'$90.00', status:'delivered', date:'Jul 2, 2026'},
-  {id:'ORD-1035', supplier:'PharmaCorp Zimbabwe', items:'Cetirizine 10mg ×200', total:'$38.00', status:'pending', date:'Jul 1, 2026'},
-];
+const MOCK_ORDERS = []; // MVP: real orders load via loadRealData() — no fake demo orders shown
 
-const MOCK_SUPPLIERS = {
-  'paracetamol 500mg':[
-    {name:'ZimDrug Distributors', loc:'Msasa, Harare', price:0.45, wasPrice:0.52, qty:4200, eta:'3 days', hasDelivery:true, deliveryFee:0, desc:'Locally manufactured, GMP-certified. Blister packs of 100.', phone:'+263 77 123 4567'},
-    {name:'MedPharm Wholesale', loc:'Workington, Harare', price:0.50, qty:6000, eta:'Tomorrow', hasDelivery:true, deliveryFee:5, desc:'Imported stock, bulk cartons of 1000. Fast dispatch.', phone:'+263 71 987 6543'},
-    {name:'HealthLink Suppliers', loc:'Graniteside, Harare', price:0.55, qty:100, eta:'Today', hasDelivery:false, desc:'Small-batch supplier, collection from warehouse only.', phone:'+263 78 555 2211'},
-  ],
-  'amoxicillin 500mg':[
-    {name:'MedPharm Wholesale', loc:'Workington, Harare', price:0.28, wasPrice:0.34, qty:1800, eta:'Tomorrow', hasDelivery:true, deliveryFee:0, desc:'Promo this week — stock up while price is down.', phone:'+263 71 987 6543'},
-    {name:'PharmaCorp Zimbabwe', loc:'Southerton, Harare', price:0.31, qty:900, eta:'2 days', hasDelivery:true, deliveryFee:8, desc:'Locally packaged capsules, batch-tested.', phone:'+263 77 222 8890'},
-    {name:'ZimDrug Distributors', loc:'Msasa, Harare', price:0.33, qty:2500, eta:'3 days', hasDelivery:false, desc:'Warehouse collection only, no delivery fleet.', phone:'+263 77 123 4567'},
-  ],
-};
+const MOCK_SUPPLIERS = {}; // MVP: real supplier data appears once wholesalers add products via their dashboard
 
 // Zimbabwe-relevant payment methods available on the platform
 const PAYMENT_METHODS = [
@@ -1183,33 +1167,13 @@ const PAYMENT_METHODS = [
 
 const DRIVER_INFO = {name:'Farai T.', phone:'+263 77 456 1230', vehicle:'Delivery van — AEB 4521'};
 
-const CATALOGUE_ITEMS = [
-  {batch:'BATCH-001', name:'Amoxicillin 500mg', generic:'Amoxicillin', pack:'100 tabs', price:0.28, expiry:'Dec 2027', supplier:'MedPharm Wholesale'},
-  {batch:'BATCH-002', name:'Paracetamol 500mg', generic:'Paracetamol', pack:'100 tabs', price:0.45, expiry:'Mar 2028', supplier:'ZimDrug Distributors'},
-  {batch:'BATCH-003', name:'ORS Sachets x10', generic:'Oral Rehydration Salts', pack:'10 sachets', price:0.30, expiry:'Jun 2028', supplier:'HealthLink Suppliers'},
-  {batch:'BATCH-004', name:'Atorvastatin 20mg', generic:'Atorvastatin', pack:'30 tabs', price:1.10, expiry:'Sep 2027', supplier:'PharmaCorp Zimbabwe'},
-  {batch:'BATCH-005', name:'Cetirizine 10mg', generic:'Cetirizine', pack:'30 tabs', price:0.19, expiry:'Jan 2028', supplier:'ZimDrug Distributors'},
-];
+const CATALOGUE_ITEMS = []; // MVP: real catalogue appears once wholesalers add products via their dashboard
 
-const PROCUREMENT_ITEMS = [
-  {name:'Amoxicillin 500mg', stock:12, stockLevel:'low', days:4, supplier:'MedPharm Wholesale', price:'$0.28/unit', delivery:'Tomorrow'},
-  {name:'ORS Sachets', stock:80, stockLevel:'warning', days:9, supplier:'HealthLink Suppliers', price:'$0.30/unit', delivery:'Today'},
-  {name:'Atorvastatin 20mg', stock:40, stockLevel:'warning', days:11, supplier:'PharmaCorp Zimbabwe', price:'$1.10/unit', delivery:'2 days'},
-  {name:'Paracetamol 500mg', stock:210, stockLevel:'healthy', days:22, supplier:'ZimDrug Distributors', price:'$0.45/unit', delivery:'3 days'},
-];
+const PROCUREMENT_ITEMS = []; // MVP: real ML stockout predictions require real order history to calculate from
 
-const APPLICATIONS = [
-  {name:'AfriPharma Ltd', date:'10 Jun 2026', status:'approved'},
-  {name:'ZimMed Supply', date:'18 Jun 2026', status:'pending'},
-  {name:'HealthBridge', date:'20 Jun 2026', status:'declined'},
-  {name:'NatPharm', date:'25 Jun 2026', status:'pending'},
-];
+const APPLICATIONS = []; // MVP: real applications load via loadRealData() — no fake demo applications shown
 
-const INVOICES = [
-  {id:'INV-4491', supplier:'MedPharm Wholesale', date:'25 Jun 2026', amount:'$180', status:'overdue'},
-  {id:'INV-4492', supplier:'ZimDrug Distributors', date:'28 Jun 2026', amount:'$420', status:'due_soon'},
-  {id:'INV-4493', supplier:'HealthLink Suppliers', date:'2 Jul 2026', amount:'$220', status:'paid'},
-];
+const INVOICES = []; // MVP: real invoices are generated from real orders — none exist until you order
 
 // Directory of supplier phone numbers, built from the supplier data already in the app
 const SUPPLIER_PHONE_DIRECTORY = {};
@@ -1218,19 +1182,7 @@ Object.values(MOCK_SUPPLIERS).flat().forEach(s=>{
 });
 
 // Seed conversations for suppliers you're already connected/trading with
-const SUPPLIER_CHATS = {
-  'MedPharm Wholesale': [
-    {dir:'in', text:"Your order ORD-1042 has been packed and is on the truck.", time:'9:40 AM'},
-    {dir:'out', text:'Great, thank you! What time should we expect it?', time:'9:41 AM'},
-    {dir:'in', text:'About 12 minutes from now.', time:'9:42 AM'},
-  ],
-  'ZimDrug Distributors': [
-    {dir:'in', text:'Price update: Paracetamol 500mg is now $0.45/unit.', time:'Yesterday'},
-  ],
-  'HealthLink Suppliers': [
-    {dir:'in', text:'Reminder: your order is ready for collection at our Graniteside warehouse.', time:'2 days ago'},
-  ],
-};
+const SUPPLIER_CHATS = {}; // MVP: real chat threads appear once you have an approved wholesaler application
 let currentSupplierChat = null;
 function getConnectedSuppliers(){
   const approved = APPLICATIONS.filter(a=>a.status==='approved').map(a=>a.name);
@@ -1295,8 +1247,11 @@ function orderRow(o, withAction){
     ${withAction ? `<td>${o.hasDelivery===false ? '<span style="color:var(--text-mut); font-size:12.5px;">Pickup</span>' : `<a class="link-action" onclick='lastOrder=${JSON.stringify(o)}; goTo("tracking")'>Track</a>`}${o.lineItems ? ` · <a class="link-action" onclick='showInvoice(${JSON.stringify(o)})'>Invoice</a>` : ''}</td>` : ''}
   </tr>`;
 }
-document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
-document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+function renderOrdersEmpty(colspan){
+  return `<tr><td colspan="${colspan}" style="text-align:center; color:var(--text-mut); padding:30px;">No orders yet — place your first order from Search &amp; Order.</td></tr>`;
+}
+document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.length ? MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('') : renderOrdersEmpty(6);
+document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.length ? MOCK_ORDERS.map(o=>orderRow(o,true)).join('') : renderOrdersEmpty(7);
 
 /* ---- auth guard + load real data on page start ---- */
 (function authGuard(){
@@ -1346,8 +1301,13 @@ document.getElementById('menuToggle').addEventListener('click',()=>document.getE
 let currentMedKey = 'paracetamol 500mg';
 function runSearch(){
   const q = document.getElementById('medSearchInput').value.trim().toLowerCase();
-  currentMedKey = MOCK_SUPPLIERS[q] ? q : 'paracetamol 500mg';
-  const list = MOCK_SUPPLIERS[currentMedKey];
+  currentMedKey = MOCK_SUPPLIERS[q] ? q : (Object.keys(MOCK_SUPPLIERS)[0] || null);
+  const list = currentMedKey ? MOCK_SUPPLIERS[currentMedKey] : [];
+  if (!list.length) {
+    document.getElementById('resultTitle').textContent = `${document.getElementById('medSearchInput').value} — no suppliers found yet`;
+    document.getElementById('supplierResults').innerHTML = `<div style="text-align:center; color:var(--text-mut); padding:40px 20px;"><i class="fa-solid fa-boxes-stacked" style="font-size:32px; margin-bottom:12px; display:block; color:var(--text-faint);"></i>No wholesalers have listed this product yet.<br>Check back soon, or try a different search.</div>`;
+    return;
+  }
   document.getElementById('resultTitle').textContent = `${document.getElementById('medSearchInput').value} — ${list.length} suppliers in stock`;
   const cheapest = Math.min(...list.map(s=>s.price));
   document.getElementById('supplierResults').innerHTML = list.map((s,i)=>`
@@ -1496,6 +1456,7 @@ function finalizeOrder(paymentStatus, methodName){
   MOCK_ORDERS.unshift(lastOrder);
   document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
   document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+  // (arrays now non-empty since we just unshifted an order — safe to render directly)
 
   // Record the invoice for this order so it appears on the persistent Invoices page.
   INVOICES.unshift({
@@ -1558,7 +1519,7 @@ function renderCatalogue(){
       <td>${c.batch}</td><td><strong>${c.name}</strong></td><td>${c.generic}</td><td>${c.pack}</td>
       <td>$${c.price.toFixed(2)}</td><td>${c.expiry}</td><td>${c.supplier}</td>
       <td><button class="btn btn-primary btn-sm" onclick="alert('${c.name} added to cart from the catalogue.')"><i class="fa-solid fa-cart-plus"></i></button></td>
-    </tr>`).join('') : `<tr><td colspan="8" style="text-align:center; color:var(--text-mut); padding:30px;">No suppliers match "${raw}".</td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="8" style="text-align:center; color:var(--text-mut); padding:30px;">${CATALOGUE_ITEMS.length===0 ? 'No products listed yet — check back once wholesalers add stock.' : `No suppliers match "${raw}".`}</td></tr>`;
 }
 
 const supplierComboOptions = ['All Suppliers', ...new Set(CATALOGUE_ITEMS.map(c=>c.supplier))];
@@ -1592,7 +1553,7 @@ renderCatalogue();
 
 /* ---- Smart Procurement ---- */
 function renderProcurement(){
-  document.getElementById('procurementBody').innerHTML = PROCUREMENT_ITEMS.map(p=>`
+  document.getElementById('procurementBody').innerHTML = PROCUREMENT_ITEMS.length ? PROCUREMENT_ITEMS.map(p=>`
     <tr>
       <td><strong>${p.name}</strong></td>
       <td>${p.stock} <span class="badge ${p.stockLevel==='low'?'low':p.stockLevel==='warning'?'pending':'ok'}">${p.stockLevel==='low'?'Low':p.stockLevel==='warning'?'Warning':'Healthy'}</span></td>
@@ -1601,7 +1562,7 @@ function renderProcurement(){
       <td>${p.stockLevel==='healthy'
           ? `<button class="btn btn-outline btn-sm" onclick="goTo('search')">Plan</button>`
           : `<button class="btn btn-primary btn-sm" onclick="alert('Reorder placed for ${p.name} with ${p.supplier}.')">Reorder</button>`}</td>
-    </tr>`).join('');
+    </tr>`).join('') : `<tr><td colspan="7" style="text-align:center; color:var(--text-mut); padding:30px;">No procurement suggestions yet — these build up from your order history over time.</td></tr>`;
 }
 renderProcurement();
 function reorderAllProcurement(){
@@ -1615,7 +1576,7 @@ const appStatusLabel = {approved:'Approved', pending:'Pending', declined:'Declin
 function renderApplications(filter){
   filter = filter || 'all';
   const rows = APPLICATIONS.filter(a=>filter==='all' || a.status===filter);
-  document.getElementById('appCards').innerHTML = rows.map(a=>`
+  document.getElementById('appCards').innerHTML = rows.length ? rows.map(a=>`
     <div class="app-card">
       <h4>${a.name}</h4>
       <div class="adate">Applied: ${a.date}</div>
@@ -1625,7 +1586,7 @@ function renderApplications(filter){
         ${a.status==='pending' ? `<a onclick="alert('Viewing application status for ${a.name}.')">View status</a><a class="danger" onclick="alert('Application to ${a.name} cancelled.')">Cancel</a>` : ''}
         ${a.status==='declined' ? `<a onclick="alert('${a.name} declined this application: MCAZ certificate could not be verified.')">View reason</a><a onclick="alert('Reapplied to ${a.name}.')">Reapply</a>` : ''}
       </div>
-    </div>`).join('');
+    </div>`).join('') : `<div style="grid-column:1/-1; text-align:center; color:var(--text-mut); padding:40px 20px;"><i class="fa-solid fa-file-circle-plus" style="font-size:32px; margin-bottom:12px; display:block; color:var(--text-faint);"></i>No applications yet.<br>Apply to a wholesaler to start trading.</div>`;
 }
 renderApplications();
 document.getElementById('appFilterTabs').addEventListener('click', e=>{
@@ -1649,7 +1610,7 @@ const invStatusLabel = {overdue:'Overdue', due_soon:'Due Soon', paid:'Paid'};
 function renderInvoices(){
   const dueCount = INVOICES.filter(i=>i.status!=='paid').length;
   document.getElementById('invoicesDueSub').textContent = `${dueCount} invoice(s) due`;
-  document.getElementById('invoicesList').innerHTML = INVOICES.map(i=>`
+  document.getElementById('invoicesList').innerHTML = INVOICES.length ? INVOICES.map(i=>`
     <div class="alert-row" style="align-items:center;">
       <div class="alert-text" style="flex:1;">
         <div class="t1">#${i.id}</div>
@@ -1659,7 +1620,7 @@ function renderInvoices(){
       <span class="badge ${invStatusBadge[i.status]}" style="margin-right:14px;">${invStatusLabel[i.status]}</span>
       <a class="link-action" style="margin-right:14px;" onclick="alert('Downloading PDF for ${i.id}...')">Download PDF</a>
       ${i.status!=='paid' ? `<a class="link-action" style="color:var(--danger);" onclick="payInvoice('${i.id}')">${i.status==='overdue'?'Pay now':'Pay'}</a>` : `<a class="link-action" onclick="alert('Viewing invoice ${i.id}')">View</a>`}
-    </div>`).join('');
+    </div>`).join('') : `<div style="text-align:center; color:var(--text-mut); padding:40px 20px;"><i class="fa-solid fa-file-invoice" style="font-size:32px; margin-bottom:12px; display:block; color:var(--text-faint);"></i>No invoices yet — these are generated automatically once you place an order.</div>`;
 }
 renderInvoices();
 
