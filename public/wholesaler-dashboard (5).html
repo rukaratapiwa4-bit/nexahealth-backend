@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexaHealth — Wholesaler Dashboard</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+<script src="https://js.puter.com/v2/"></script>
+
+<style>
+:root{
+  --primary:#0088cc; --primary-dark:#0b2b44; --primary-light:#e6f4fb; --primary-soft:#d6ecf9;
+  --success:#16a34a; --success-bg:#e8f8ee; --warning:#f59e0b; --warning-bg:#fef6e7;
+  --danger:#dc2626; --danger-bg:#fdecec; --bg:#f4f7fa; --surface:#ffffff;
+  --border:#e3e9ef; --text:#152238; --text-mut:#64748b; --text-faint:#94a3b8;
+  --radius:14px; --radius-sm:8px;
+  --shadow:0 1px 2px rgba(11,43,68,.04), 0 4px 16px rgba(11,43,68,.06);
+  --shadow-lg:0 8px 30px rgba(11,43,68,.12); --sidebar-w:252px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); font-size:14.5px; -webkit-font-smoothing:antialiased;}
+a{text-decoration:none; color:inherit;} button{font-family:inherit; cursor:pointer; border:none; background:none;} ul{list-style:none;}
+::-webkit-scrollbar{width:8px; height:8px;} ::-webkit-scrollbar-thumb{background:#cbd8e2; border-radius:8px;}
+.app{display:flex; min-height:100vh;}
+
+.sidebar{width:var(--sidebar-w); background:var(--primary-dark); color:#cfe3f0; position:fixed; top:0; left:0; bottom:0; display:flex; flex-direction:column; z-index:100; transition:transform .25s ease;}
+.sidebar-brand{display:flex; align-items:center; gap:10px; padding:22px 20px; border-bottom:1px solid rgba(255,255,255,.08);}
+.sidebar-brand .logo-mark{width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--primary),#00b8f0); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px; flex-shrink:0;}
+.sidebar-brand .name{font-weight:700; color:#fff; font-size:16.5px; line-height:1.1;}
+.sidebar-brand .role{font-size:11px; color:#7fa8c2; text-transform:uppercase; letter-spacing:.05em;}
+.sidebar-nav{flex:1; overflow-y:auto; padding:16px 12px;}
+.sidebar-nav .group-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:#5f88a3; padding:14px 12px 6px;}
+.nav-item{display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; margin-bottom:2px; color:#c3dbe9; font-weight:500; font-size:14px; position:relative; transition:background .15s, color .15s;}
+.nav-item i{width:18px; text-align:center; font-size:15px; color:#7fa8c2;}
+.nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+.nav-item.active{background:var(--primary); color:#fff;} .nav-item.active i{color:#fff;}
+.nav-item .badge-dot{margin-left:auto; background:var(--danger); color:#fff; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:20px; min-width:18px; text-align:center;}
+.sidebar-foot{padding:14px 20px; border-top:1px solid rgba(255,255,255,.08); display:flex; align-items:center; gap:10px;}
+.avatar-sm{width:34px; height:34px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:13px; flex-shrink:0;}
+.sidebar-foot .who{font-size:13px; color:#fff; font-weight:600; line-height:1.2;} .sidebar-foot .sub{font-size:11.5px; color:#7fa8c2;}
+.sidebar-foot .logout{margin-left:auto; color:#7fa8c2; font-size:15px;} .sidebar-foot .logout:hover{color:#fff;}
+
+.main{margin-left:var(--sidebar-w); flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{height:68px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; padding:0 26px; position:sticky; top:0; z-index:50;}
+.menu-toggle{display:none; font-size:18px; color:var(--text-mut);}
+.page-title{font-size:18px; font-weight:700; color:var(--primary-dark);} .page-sub{font-size:12.5px; color:var(--text-mut); margin-top:1px;}
+.topbar-search{flex:1; max-width:420px; margin-left:12px; display:flex; align-items:center; gap:10px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:9px 14px; color:var(--text-faint);}
+.topbar-search input{flex:1; border:none; background:none; outline:none; font-size:13.5px; color:var(--text);}
+.topbar-actions{display:flex; align-items:center; gap:8px; margin-left:auto;}
+.icon-btn{width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--text-mut); font-size:16px; position:relative; transition:background .15s;}
+.icon-btn:hover{background:var(--bg);}
+.icon-btn .dot{position:absolute; top:7px; right:8px; width:8px; height:8px; border-radius:50%; background:var(--danger); border:2px solid var(--surface);}
+.topbar-profile{display:flex; align-items:center; gap:10px; padding-left:12px; border-left:1px solid var(--border);}
+.topbar-profile .name{font-size:13.5px; font-weight:600;} .topbar-profile .pharmacy{font-size:11.5px; color:var(--text-mut);}
+.content{padding:26px; flex:1;}
+.view{display:none;} .view.active{display:block; animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+.stats-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:24px;}
+.stat-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);}
+.stat-card .top{display:flex; justify-content:space-between; align-items:flex-start;}
+.stat-card .icon-wrap{width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px;}
+.stat-card .icon-wrap.blue{background:var(--primary-light); color:var(--primary);}
+.stat-card .icon-wrap.amber{background:var(--warning-bg); color:var(--warning);}
+.stat-card .icon-wrap.green{background:var(--success-bg); color:var(--success);}
+.stat-card .icon-wrap.navy{background:#eef2f8; color:var(--primary-dark);}
+.stat-card .value{font-size:26px; font-weight:800; margin-top:14px; color:var(--primary-dark);}
+.stat-card .label{font-size:12.5px; color:var(--text-mut); margin-top:2px;}
+.stat-card .trend{font-size:11.5px; font-weight:600; margin-top:10px; display:flex; align-items:center; gap:4px;}
+.trend.up{color:var(--success);} .trend.down{color:var(--danger);} .trend.flat{color:var(--text-faint);}
+
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:22px; overflow:hidden;}
+.panel-head{display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:10px;}
+.panel-head h3{font-size:15px; font-weight:700; color:var(--primary-dark);}
+.panel-head .sub{font-size:12px; color:var(--text-mut); margin-top:2px; font-weight:400;}
+.panel-body{padding:22px;}
+.link-action{color:var(--primary); font-size:12.5px; font-weight:600;} .link-action:hover{text-decoration:underline;}
+.two-col{display:grid; grid-template-columns:1.6fr 1fr; gap:22px;}
+
+.alert-row{display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--border);} .alert-row:last-child{border-bottom:none;}
+.alert-ico{width:34px; height:34px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px;}
+.alert-ico.warn{background:var(--warning-bg); color:var(--warning);} .alert-ico.info{background:var(--primary-light); color:var(--primary);} .alert-ico.danger{background:var(--danger-bg); color:var(--danger);}
+.alert-text .t1{font-size:13.5px; font-weight:600;} .alert-text .t2{font-size:12px; color:var(--text-mut); margin-top:1px;}
+
+table{width:100%; border-collapse:collapse;}
+thead th{text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-mut); padding:0 22px 12px; font-weight:600;}
+tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px;} tbody tr:hover{background:#fafcfe;}
+.badge{display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11.5px; font-weight:700;}
+.badge.pending{background:var(--warning-bg); color:#b57a05;} .badge.confirmed{background:var(--primary-light); color:var(--primary);}
+.badge.transit{background:#eef0fd; color:#4c53d6;} .badge.delivered{background:var(--success-bg); color:var(--success);}
+.badge.low{background:var(--danger-bg); color:var(--danger);} .badge.ok{background:var(--success-bg); color:var(--success);}
+.badge.out{background:var(--danger-bg); color:var(--danger);}
+
+.btn{padding:9px 16px; border-radius:9px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:7px;}
+.btn-primary{background:var(--primary); color:#fff;} .btn-primary:hover{background:#0077b3;}
+.btn-outline{background:#fff; border:1px solid var(--border); color:var(--text);} .btn-outline:hover{border-color:var(--primary); color:var(--primary);}
+.btn-sm{padding:6px 12px; font-size:12px;} .btn-block{width:100%; justify-content:center;}
+.btn-danger-outline{background:#fff; border:1px solid var(--danger); color:var(--danger);}
+
+.quick-actions{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+.qa-card{border:1px solid var(--border); border-radius:12px; padding:16px; text-align:left; transition:border-color .15s, transform .15s; background:#fff;}
+.qa-card:hover{border-color:var(--primary); transform:translateY(-2px);}
+.qa-card i{font-size:18px; color:var(--primary); margin-bottom:10px; display:block;}
+.qa-card .t{font-size:13px; font-weight:600;} .qa-card .s{font-size:11.5px; color:var(--text-mut); margin-top:2px;}
+
+/* forms */
+.form-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.form-group{margin-bottom:14px;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:var(--text);}
+.form-group input, .form-group select, .form-group textarea{
+  width:100%; border:1px solid var(--border); border-radius:9px; padding:10px 12px; font-size:13.5px; font-family:inherit; outline:none;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus{border-color:var(--primary);}
+.toggle-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-row .tt{font-size:13.5px; font-weight:600;} .toggle-row .ts{font-size:11.5px; color:var(--text-mut);}
+.switch{position:relative; width:42px; height:24px; background:var(--border); border-radius:20px; flex-shrink:0; transition:background .15s;}
+.switch.on{background:var(--primary);}
+.switch::after{content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; background:#fff; border-radius:50%; transition:transform .15s;}
+.switch.on::after{transform:translateX(18px);}
+
+.upload-box{border:2px dashed var(--border); border-radius:12px; padding:30px; text-align:center; color:var(--text-mut); cursor:pointer; transition:border-color .15s;}
+.upload-box:hover{border-color:var(--primary); color:var(--primary);}
+.upload-box i{font-size:24px; margin-bottom:10px; display:block;}
+
+/* promo cards */
+.promo-cards{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+.promo-card{border:1.5px solid var(--border); border-radius:12px; padding:18px; position:relative;}
+.promo-card .ptag{position:absolute; top:14px; right:14px; background:var(--success-bg); color:var(--success); font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.promo-card h4{font-size:14px; font-weight:700; margin-bottom:6px; padding-right:70px;}
+.promo-card p{font-size:12.5px; color:var(--text-mut); margin-bottom:12px;}
+.promo-card .pstats{display:flex; gap:18px; font-size:12px; color:var(--text-mut); border-top:1px dashed var(--border); padding-top:12px;}
+.promo-card .pstats strong{display:block; color:var(--text); font-size:14px;}
+
+/* analytics */
+.bars{display:flex; align-items:flex-end; gap:16px; height:200px; padding-top:10px;}
+.bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px;}
+.bar-col .bar{width:100%; max-width:38px; background:linear-gradient(180deg,var(--primary),#00b8f0); border-radius:6px 6px 0 0;}
+.bar-col .bl{font-size:11px; color:var(--text-mut);}
+.region-row{display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+.region-row .sp-name{width:130px; font-size:13px; font-weight:600; flex-shrink:0;}
+.sp-bar-bg{flex:1; height:10px; background:var(--bg); border-radius:20px; overflow:hidden;}
+.sp-bar-fill{height:100%; border-radius:20px;}
+.sp-pct{width:40px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-mut);}
+.donut-wrap{display:flex; align-items:center; gap:26px;}
+.donut{width:150px; height:150px; border-radius:50%; flex-shrink:0;}
+.legend-item{display:flex; align-items:center; gap:8px; font-size:12.5px; margin-bottom:9px;}
+.legend-dot{width:10px; height:10px; border-radius:3px;}
+
+/* chat */
+.chat-shell{display:grid; grid-template-columns:280px 1fr; height:560px;}
+.chat-list{border-right:1px solid var(--border); overflow-y:auto;}
+.chat-list-item{padding:14px 18px; border-bottom:1px solid var(--border); cursor:pointer;}
+.chat-list-item.active{background:var(--primary-light);}
+.chat-list-item .cn{font-size:13.5px; font-weight:600;} .chat-list-item .cm{font-size:12px; color:var(--text-mut); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.chat-main{display:flex; flex-direction:column;}
+.chat-head{padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;}
+.chat-head .t{font-size:13.5px; font-weight:700;} .chat-head .s{font-size:11.5px; color:var(--text-mut);}
+.chat-body{flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px;}
+.msg{max-width:70%; padding:10px 14px; border-radius:14px; font-size:13.5px; line-height:1.45;}
+.msg.in{background:var(--bg); border-bottom-left-radius:4px; align-self:flex-start;}
+.msg.out{background:var(--primary); color:#fff; border-bottom-right-radius:4px; align-self:flex-end;}
+.msg.ai{background:var(--primary-light); border-bottom-left-radius:4px; align-self:flex-start; color:var(--primary-dark);}
+.msg .meta{font-size:10px; opacity:.65; margin-top:5px;}
+.chat-input{padding:14px 18px; border-top:1px solid var(--border); display:flex; gap:10px;}
+.chat-input input{flex:1; border:1px solid var(--border); border-radius:10px; padding:11px 14px; outline:none; font-size:13.5px;}
+.chat-input button{width:42px; height:42px; background:var(--primary); color:#fff; border-radius:10px;}
+.ai-scope-note{background:var(--primary-light); color:var(--primary-dark); font-size:11.5px; padding:9px 14px; display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--border);}
+
+/* modal */
+.modal-overlay{position:fixed; inset:0; background:rgba(11,43,68,.4); z-index:400; display:none; align-items:center; justify-content:center; padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff; border-radius:var(--radius); width:100%; max-width:460px; max-height:88vh; overflow-y:auto; box-shadow:var(--shadow-lg);}
+.modal-box.wide{max-width:600px;}
+.modal-head{padding:18px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;}
+.modal-head h3{font-size:15px; font-weight:700;} .modal-head i{cursor:pointer; color:var(--text-mut);}
+.modal-body{padding:22px;}
+.call-option{
+  display:flex; align-items:center; gap:14px; padding:14px 16px; border:1.5px solid var(--border); border-radius:11px;
+  margin-bottom:10px; transition:border-color .15s, background .15s; width:100%; text-align:left;
+}
+.call-option:hover{border-color:var(--primary); background:var(--primary-light);}
+.call-option i{font-size:18px; color:var(--primary); width:22px; text-align:center;}
+.call-option .po-name{font-size:13.5px; font-weight:700;}
+.call-option .po-desc{font-size:11.5px; color:var(--text-mut);}
+#wholesalerMap{width:100%; height:460px; border-radius:var(--radius); border:1px solid var(--border);}
+.route-info-panel{
+  display:none; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  margin-top:14px; padding:14px 18px; background:var(--primary-light); border-radius:12px; font-size:13.5px; color:var(--primary-dark); font-weight:600;
+}
+.step-row{display:flex; gap:14px; padding:13px 0; border-bottom:1px solid var(--border); align-items:flex-start;}
+.step-row:last-child{border-bottom:none;}
+.step-row .step-num{width:26px; height:26px; border-radius:50%; background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.step-row.current .step-num{background:var(--primary); color:#fff;}
+.step-row .step-icon{width:20px; text-align:center; color:var(--primary); flex-shrink:0; margin-top:2px;}
+.step-row .step-text{font-size:13.5px; font-weight:500;}
+.step-row .step-dist{font-size:11.5px; color:var(--text-mut); margin-top:2px;}
+
+@media(max-width:1180px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);} .two-col{grid-template-columns:1fr;}
+  .quick-actions{grid-template-columns:repeat(2,1fr);} .promo-cards{grid-template-columns:1fr;} .form-grid{grid-template-columns:1fr;}
+}
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%);} .sidebar.open{transform:translateX(0);} .main{margin-left:0;}
+  .menu-toggle{display:block;} .topbar-search{display:none;} .stats-grid{grid-template-columns:1fr;}
+  .chat-shell{grid-template-columns:1fr;} .chat-list{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-mark">N</div>
+      <div><div class="name">NexaHealth</div><div class="role">Wholesaler Portal</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="group-label">Overview</div>
+      <a class="nav-item active" data-view="dashboard"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+
+      <div class="group-label">Catalog</div>
+      <a class="nav-item" data-view="inventory"><i class="fa-solid fa-boxes-stacked"></i> Stock &amp; Pricing</a>
+      <a class="nav-item" data-view="promotions"><i class="fa-solid fa-bullhorn"></i> Promotions &amp; Ads</a>
+
+      <div class="group-label">Sales</div>
+      <a class="nav-item" data-view="orders"><i class="fa-solid fa-receipt"></i> Incoming Orders <span class="badge-dot">4</span></a>
+      <a class="nav-item" data-view="map"><i class="fa-solid fa-map-location-dot"></i> Deliveries Map</a>
+      <a class="nav-item" data-view="payments"><i class="fa-solid fa-file-invoice-dollar"></i> Payments &amp; Statements</a>
+
+      <div class="group-label">Collaboration</div>
+      <a class="nav-item" data-view="messages"><i class="fa-solid fa-comments"></i> Messages</a>
+      <a class="nav-item" data-view="assistant"><i class="fa-solid fa-sparkles"></i> AI Assistant</a>
+
+      <div class="group-label">Insights</div>
+      <a class="nav-item" data-view="analytics"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+      <a class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="avatar-sm">MP</div>
+      <div><div class="who">MedPharm Wholesale</div><div class="sub">Workington, Harare</div></div>
+      <i class="fa-solid fa-right-from-bracket logout"></i>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <i class="fa-solid fa-bars menu-toggle" id="menuToggle"></i>
+      <div><div class="page-title" id="pageTitle">Dashboard</div><div class="page-sub" id="pageSub">Here's how your business is doing today</div></div>
+      <div class="topbar-search"><i class="fa-solid fa-magnifying-glass"></i><input type="text" placeholder="Search products, orders, pharmacies..."></div>
+      <div class="topbar-actions">
+        <div class="icon-btn"><i class="fa-regular fa-bell"></i><span class="dot"></span></div>
+        <div class="icon-btn"><i class="fa-regular fa-envelope"></i></div>
+        <div class="topbar-profile"><div class="avatar-sm">MP</div><div><div class="name">MedPharm Wholesale</div><div class="pharmacy">Verified Wholesaler</div></div></div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <section class="view active" id="view-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="top"><div class="icon-wrap blue"><i class="fa-solid fa-cart-shopping"></i></div></div><div class="value">4</div><div class="label">New orders today</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 2 more than yesterday</div></div>
+          <div class="stat-card"><div class="top"><div class="icon-wrap green"><i class="fa-solid fa-sack-dollar"></i></div></div><div class="value">$18,420</div><div class="label">Revenue this month</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 12% vs last month</div></div>
+          <div class="stat-card"><div class="top"><div class="icon-wrap amber"><i class="fa-solid fa-triangle-exclamation"></i></div></div><div class="value">6</div><div class="label">Products low/out of stock</div><div class="trend down"><i class="fa-solid fa-arrow-down"></i> Needs restock</div></div>
+          <div class="stat-card"><div class="top"><div class="icon-wrap navy"><i class="fa-solid fa-store"></i></div></div><div class="value">62</div><div class="label">Active pharmacy customers</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 5 new this month</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Quick actions</h3></div>
+          <div class="panel-body">
+            <div class="quick-actions">
+              <button class="qa-card" onclick="goTo('inventory')"><i class="fa-solid fa-file-arrow-up"></i><div class="t">Update today's pricelist</div><div class="s">Upload Excel or edit manually</div></button>
+              <button class="qa-card" onclick="goTo('orders')"><i class="fa-solid fa-box-open"></i><div class="t">Confirm new orders</div><div class="s">4 awaiting confirmation</div></button>
+              <button class="qa-card" onclick="goTo('promotions')"><i class="fa-solid fa-bullhorn"></i><div class="t">Launch a promotion</div><div class="s">Visible to pharmacies only</div></button>
+              <button class="qa-card" onclick="goTo('assistant')"><i class="fa-solid fa-sparkles"></i><div class="t">Ask the AI Assistant</div><div class="s">Sales &amp; stock questions</div></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><div><h3>New orders</h3><div class="sub">Confirm to start packing</div></div><a class="link-action" onclick="goTo('orders')">View all</a></div>
+            <table>
+              <thead><tr><th>Order</th><th>Pharmacy</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+              <tbody id="dashOrdersBody"></tbody>
+            </table>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>Alerts</h3></div></div>
+            <div class="panel-body">
+              <div class="alert-row"><div class="alert-ico warn"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="alert-text"><div class="t1">Amoxicillin 500mg is almost out</div><div class="t2">180 units left — hidden from buyers below 50</div></div></div>
+              <div class="alert-row"><div class="alert-ico info"><i class="fa-solid fa-clock"></i></div><div class="alert-text"><div class="t1">3 pharmacies have overdue payments</div><div class="t2">Total outstanding: $1,240</div></div></div>
+              <div class="alert-row"><div class="alert-ico danger"><i class="fa-solid fa-ban"></i></div><div class="alert-text"><div class="t1">Recall notice sent</div><div class="t2">Batch #A2201 — 14 pharmacies notified</div></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STOCK & PRICING -->
+      <section class="view" id="view-inventory">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>Upload today's pricelist</h3><div class="sub">Bulk upload via Excel, or add products manually below</div></div>
+          </div>
+          <div class="panel-body">
+            <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+              <i class="fa-solid fa-file-arrow-up"></i>
+              <div><strong>Click to upload</strong> your Excel pricelist (.xlsx, .csv)</div>
+              <div style="font-size:11.5px; margin-top:4px;">Out-of-stock items are automatically hidden from pharmacies</div>
+              <input type="file" id="fileInput" style="display:none" accept=".xlsx,.csv" onchange="mockUploadFile(this)">
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>Your product catalog</h3><div class="sub">Only in-stock items are visible to pharmacies</div></div>
+            <button class="btn btn-primary btn-sm" onclick="openProductModal('add')"><i class="fa-solid fa-plus"></i> Add product</button>
+          </div>
+          <table>
+            <thead><tr><th>Product</th><th>Price</th><th>Stock</th><th>Delivery</th><th>Visibility</th><th></th></tr></thead>
+            <tbody id="productsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PROMOTIONS -->
+      <section class="view" id="view-promotions">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>Active promotions</h3><div class="sub">Visible only to pharmacies &amp; hospitals — never to competitors</div></div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('addPromoModal')"><i class="fa-solid fa-plus"></i> New promotion</button>
+          </div>
+          <div class="panel-body">
+            <div class="promo-cards" id="promoCards"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Educational videos</h3><div class="sub">Help pharmacists learn about your products</div></div></div>
+          <div class="panel-body">
+            <div class="upload-box" onclick="alert('Video upload would open here — connect this to your media storage backend.')">
+              <i class="fa-solid fa-video"></i>
+              <div><strong>Click to upload</strong> a short product video</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INCOMING ORDERS -->
+      <section class="view" id="view-orders">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Incoming orders</h3><div class="sub">Confirm, pack, and dispatch</div></div></div>
+          <table>
+            <thead><tr><th>Order</th><th>Pharmacy</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th></th></tr></thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- DELIVERIES MAP -->
+      <section class="view" id="view-map">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Deliveries Map</h3><div class="sub">Click a pharmacy pin, then "Get directions" for a guided route from your warehouse</div></div></div>
+          <div class="panel-body">
+            <div id="wholesalerMap"></div>
+            <div id="routeInfoPanel" class="route-info-panel">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-route" style="color:var(--primary);"></i>
+                <span id="routeInfoText">No route selected</span>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" id="routeStepsBtn" onclick="openTurnByTurn()"><i class="fa-solid fa-list-ol"></i> Turn-by-turn (in-app)</button>
+                <button class="btn btn-outline btn-sm" id="routeGmapsBtn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Google Maps</button>
+                <button class="btn btn-outline btn-sm" onclick="clearRoute()"><i class="fa-solid fa-xmark"></i> Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAYMENTS & STATEMENTS -->
+      <section class="view" id="view-payments">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Outstanding balances</h3><div class="sub">Automatic reminders are sent before due dates</div></div>
+            <button class="btn btn-outline btn-sm" onclick="alert('Monthly statements generated and sent to all customers.')"><i class="fa-solid fa-paper-plane"></i> Send monthly statements</button>
+          </div>
+          <table>
+            <thead><tr><th>Pharmacy</th><th>Outstanding</th><th>Due date</th><th>Status</th><th></th></tr></thead>
+            <tbody id="balancesBody"></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Payment reminder settings</h3></div>
+          <div class="panel-body">
+            <div class="toggle-row"><div><div class="tt">Auto-remind before due date</div><div class="ts">Sends a notification 3 days before payment is due</div></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="toggle-row"><div><div class="tt">Auto-generate monthly statements</div><div class="ts">Sent on the 1st of every month</div></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MESSAGES -->
+      <section class="view" id="view-messages">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Messages</h3><div class="sub">Talk directly with pharmacies — delays, complaints, recalls</div></div>
+            <button class="btn btn-outline btn-sm" onclick="openModal('recallModal')"><i class="fa-solid fa-bullhorn"></i> Broadcast recall</button>
+          </div>
+          <div class="chat-shell">
+            <div class="chat-list" id="pharmacyChatList"></div>
+            <div class="chat-main">
+              <div class="chat-head">
+                <div class="avatar-sm" id="msgChatAvatar">?</div>
+                <div style="flex:1; min-width:0;"><div class="t" id="msgChatName">City Pharmacy</div><div class="s" id="msgChatSub">Tendai Moyo</div></div>
+                <button class="icon-btn" style="margin-left:auto;" onclick="callCurrentPharmacy()" title="Call"><i class="fa-solid fa-phone"></i></button>
+              </div>
+              <div class="chat-body" id="msgChatBody"></div>
+              <div class="chat-input"><input id="msgChatInput" type="text" placeholder="Type a message..."><button onclick="sendMsg()"><i class="fa-solid fa-paper-plane"></i></button></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI ASSISTANT -->
+      <section class="view" id="view-assistant">
+        <div class="panel">
+          <div class="panel-head"><div><h3>NexaHealth AI Assistant</h3><div class="sub">Scoped to your business data on NexaHealth</div></div></div>
+          <div class="chat-shell" style="grid-template-columns:1fr;">
+            <div class="chat-main">
+              <div class="ai-scope-note"><i class="fa-solid fa-circle-info"></i> Ask about your orders, stock, pricing, promotions, payments, or analytics — anything inside your NexaHealth account.</div>
+              <div class="chat-body" id="aiChatBody">
+                <div class="msg ai">Hi — I'm your NexaHealth assistant. Ask me things like "which pharmacies have overdue payments", "what's my best-selling product this month", or "how do I set up a promotion". What would you like to know?</div>
+              </div>
+              <div class="chat-input"><input id="aiChatInput" type="text" placeholder="Ask about your orders, stock, or sales..."><button onclick="sendAiMsg()"><i class="fa-solid fa-paper-plane"></i></button></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section class="view" id="view-analytics">
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><h3>Orders received — last 6 months</h3></div>
+            <div class="panel-body"><div class="bars" id="ordersBarChart"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Best-selling products</h3></div>
+            <div class="panel-body">
+              <div class="donut-wrap"><div class="donut" id="topProdDonut"></div><div id="donutLegend"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Demand by region</h3><div class="sub">Where your products are ordered from most</div></div></div>
+          <div class="panel-body" id="regionDemand"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Top pharmacy customers</h3></div></div>
+          <table>
+            <thead><tr><th>Pharmacy</th><th>Most ordered</th><th>Orders this month</th><th>Total spend</th></tr></thead>
+            <tbody id="topPharmaciesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" id="view-settings">
+        <div class="panel">
+          <div class="panel-head"><h3>Business profile</h3></div>
+          <div class="panel-body"><p style="color:var(--text-mut); font-size:13.5px;">Manage your MCAZ registration, warehouse address, and delivery fleet details here.</p></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ADD PRODUCT MODAL -->
+<div class="modal-overlay" id="addProductModal">
+  <div class="modal-box wide">
+    <div class="modal-head"><h3 id="productModalTitle">Add product</h3><i class="fa-solid fa-xmark" onclick="closeModal('addProductModal')"></i></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Product name</label><input id="npName" type="text" placeholder="e.g. Paracetamol 500mg"></div>
+        <div class="form-group"><label>Price per unit ($)</label><input id="npPrice" type="number" step="0.01" placeholder="0.45"></div>
+        <div class="form-group"><label>Quantity in stock</label><input id="npQty" type="number" placeholder="1000"></div>
+        <div class="form-group"><label>Was price (optional, for promo display)</label><input id="npWas" type="number" step="0.01" placeholder="0.55"></div>
+        <div class="form-group full"><label>Description</label><textarea id="npDesc" rows="2" placeholder="Batch info, packaging, certifications..."></textarea></div>
+        <div class="form-group"><label>Delivery</label><select id="npDelivery"><option value="free">Free delivery</option><option value="paid">Paid delivery</option><option value="none">No delivery — pickup only</option></select></div>
+        <div class="form-group"><label>Delivery fee ($, if paid)</label><input id="npFee" type="number" step="0.01" placeholder="5.00"></div>
+        <div class="form-group full">
+          <label>Product photos <span style="font-weight:400; color:var(--text-mut);">(optional — up to 3, JPG/PNG)</span></label>
+          <input id="npImages" type="file" accept="image/*" multiple onchange="handleProductImages(this)">
+          <div id="npImagePreview" style="display:flex; gap:10px; margin-top:10px;"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="saveProduct()"><i class="fa-solid fa-check"></i> <span id="productModalSaveLabel">Add to catalog</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PROMOTION MODAL -->
+<div class="modal-overlay" id="addPromoModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>New promotion</h3><i class="fa-solid fa-xmark" onclick="closeModal('addPromoModal')"></i></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Title</label><input id="ppTitle" type="text" placeholder="Buy 1000 units of Cetirizine, get 100 free"></div>
+      <div class="form-group"><label>Details</label><textarea id="ppDesc" rows="3" placeholder="Terms of the promotion..."></textarea></div>
+      <button class="btn btn-primary btn-block" onclick="addPromo()"><i class="fa-solid fa-check"></i> Launch promotion</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECALL MODAL -->
+<div class="modal-overlay" id="recallModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Broadcast a product recall</h3><i class="fa-solid fa-xmark" onclick="closeModal('recallModal')"></i></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Product / batch being recalled</label>
+        <select id="recallProduct"></select>
+      </div>
+      <div class="form-group">
+        <label>Message to affected pharmacies</label>
+        <textarea id="recallMessage" rows="3" placeholder="e.g. Please stop dispensing this batch and return any unused stock for a full refund."></textarea>
+      </div>
+      <p style="font-size:12px; color:var(--text-mut); margin-bottom:14px;">
+        This will only be sent to pharmacies who have actually ordered this product from you — not your entire customer list.
+      </p>
+      <button class="btn btn-primary btn-block" onclick="sendRecall()"><i class="fa-solid fa-bullhorn"></i> Send recall notice</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALL MODAL -->
+<div class="modal-overlay" id="callModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="callModalTitle">Call pharmacy</h3><i class="fa-solid fa-xmark" onclick="closeModal('callModal')"></i></div>
+    <div class="modal-body">
+      <button class="call-option" onclick="callOnNexa()"><i class="fa-solid fa-phone-volume"></i><div><div class="po-name">Call on Nexa</div><div class="po-desc">In-app call, no airtime used</div></div></button>
+      <button class="call-option" onclick="callOnPhone()"><i class="fa-solid fa-phone"></i><div><div class="po-name">Call on phone</div><div class="po-desc" id="callPhoneLabel">Opens your phone dialer</div></div></button>
+    </div>
+  </div>
+</div>
+
+<!-- TURN-BY-TURN MODAL -->
+<div class="modal-overlay" id="turnByTurnModal">
+  <div class="modal-box wide">
+    <div class="modal-head"><h3 id="turnByTurnTitle">Turn-by-turn directions</h3><i class="fa-solid fa-xmark" onclick="closeModal('turnByTurnModal')"></i></div>
+    <div class="modal-body" id="turnByTurnBody"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOCK DATA — replace with real API calls to your backend.
+   ========================================================================= */
+const PRODUCTS = [
+  {name:'Amoxicillin 500mg', price:0.28, wasPrice:0.34, qty:180, delivery:'free', fee:0, images:[]},
+  {name:'Paracetamol 500mg', price:0.45, qty:6000, delivery:'paid', fee:5, images:[]},
+  {name:'ORS Sachets', price:0.30, qty:0, delivery:'none', fee:0, images:[]},
+  {name:'Cetirizine 10mg', price:0.19, qty:2200, delivery:'free', fee:0, images:[]},
+];
+
+const ORDERS = [
+  {id:'ORD-1042', pharmacy:'City Pharmacy', items:'Amoxicillin 500mg ×500', total:'$225.00', payment:'Pay on delivery', status:'transit'},
+  {id:'ORD-1044', pharmacy:'Greenwood Pharmacy', items:'Cetirizine 10mg ×1000, +100 free', total:'$190.00', payment:'Paid — EcoCash', status:'pending'},
+  {id:'ORD-1045', pharmacy:'Sunrise Pharmacy', items:'Paracetamol 500mg ×2000', total:'$900.00', payment:'Paid — ZIPIT', status:'pending'},
+  {id:'ORD-1046', pharmacy:'Wellcare Pharmacy', items:'Amoxicillin 500mg ×300', total:'$84.00', payment:'Pay on delivery', status:'confirmed'},
+];
+
+// Connected pharmacy customers — used for Messages, the Deliveries Map, and targeted recalls
+const PHARMACY_CHATS = {
+  'City Pharmacy': {phone:'+263 71 234 5678', lat:-17.8292, lng:31.0335,
+    messages:[{dir:'in', text:'When will ORD-1042 arrive?', time:'9:40 AM'}, {dir:'out', text:"It's on the truck now, ETA 12 minutes.", time:'9:42 AM'}]},
+  'Greenwood Pharmacy': {phone:'+263 77 555 1122', lat:-17.8420, lng:31.0510,
+    messages:[{dir:'in', text:'Thanks for the quick delivery!', time:'Yesterday'}]},
+  'Sunrise Pharmacy': {phone:'+263 78 222 9090', lat:-17.8105, lng:31.0225,
+    messages:[{dir:'in', text:'Product complaint - batch A2201', time:'2 days ago'}]},
+  'Wellcare Pharmacy': {phone:'+263 77 888 3344', lat:-17.8355, lng:31.0630,
+    messages:[]},
+};
+let currentPharmacyChat = 'City Pharmacy';
+
+const BALANCES = [
+  {pharmacy:'Sunrise Pharmacy', amount:'$420.00', due:'Jul 10, 2026', status:'pending'},
+  {pharmacy:'Wellcare Pharmacy', amount:'$610.00', due:'Jul 8, 2026', status:'low'},
+  {pharmacy:'Greenwood Pharmacy', amount:'$210.00', due:'Jul 15, 2026', status:'ok'},
+];
+
+const PROMOTIONS = [
+  {title:'Buy 1000 Cetirizine, get 100 free', desc:'Valid on all Cetirizine 10mg orders above 1000 units.', views:340, redemptions:28},
+  {title:'10% off Amoxicillin this week', desc:'Automatic discount applied at checkout.', views:512, redemptions:64},
+];
+
+const businessLabel = {pending:'Pending', confirmed:'Confirmed', transit:'In Transit', delivered:'Delivered'};
+
+function orderRow(o){
+  return `<tr>
+    <td><strong>${o.id}</strong></td><td>${o.pharmacy}</td><td>${o.items}</td><td>${o.total}</td>
+    <td><span class="badge ${o.payment.startsWith('Paid')?'delivered':'pending'}">${o.payment}</span></td>
+    <td><span class="badge ${o.status}">${businessLabel[o.status]}</span></td>
+    <td>${o.status==='pending' ? `<button class="btn btn-primary btn-sm" onclick="confirmOrder('${o.id}')">Confirm</button>` : `<a class="link-action">Print invoice</a>`}</td>
+  </tr>`;
+}
+function renderOrders(){
+  document.getElementById('dashOrdersBody').innerHTML = ORDERS.slice(0,4).map(o=>orderRow(o)).join('');
+  document.getElementById('ordersBody').innerHTML = ORDERS.map(o=>orderRow(o)).join('');
+}
+renderOrders();
+
+function confirmOrder(id){
+  const o = ORDERS.find(x=>x.id===id);
+  if(o){ o.status='confirmed'; renderOrders(); alert(`Order ${id} confirmed. Invoice printed and packing started.`); }
+}
+
+function productRow(p, i){
+  const visible = p.qty > 0;
+  const deliveryLabel = p.delivery==='free' ? 'Free delivery' : p.delivery==='paid' ? `$${p.fee.toFixed(2)} fee` : 'No delivery';
+  const thumb = p.images && p.images.length ? `<img src="${p.images[0]}" style="width:34px; height:34px; border-radius:7px; object-fit:cover; margin-right:8px; vertical-align:middle;">` : '';
+  return `<tr>
+    <td>${thumb}<strong style="cursor:pointer; color:var(--primary-dark);" onclick="openProductModal('edit', ${i})">${p.name}</strong>${p.wasPrice ? `<div style="font-size:11.5px;color:var(--text-faint);text-decoration:line-through; margin-left:${thumb?'42px':'0'};">was $${p.wasPrice.toFixed(2)}</div>`:''}</td>
+    <td>$${p.price.toFixed(2)}</td>
+    <td><span class="badge ${p.qty===0?'out':p.qty<200?'low':'ok'}">${p.qty===0?'Out of stock':p.qty.toLocaleString()+' units'}</span></td>
+    <td>${deliveryLabel}</td>
+    <td><span class="badge ${visible?'ok':'out'}">${visible?'Visible to buyers':'Hidden (out of stock)'}</span></td>
+    <td><a class="link-action" onclick="openProductModal('edit', ${i})"><i class="fa-solid fa-pen"></i> Edit</a></td>
+  </tr>`;
+}
+function renderProducts(){ document.getElementById('productsBody').innerHTML = PRODUCTS.map((p,i)=>productRow(p,i)).join(''); }
+renderProducts();
+
+/* ---- Add / Edit product (shared modal) ---- */
+let editingProductIndex = null;
+let pendingProductImages = [];
+function openProductModal(mode, index){
+  editingProductIndex = mode==='edit' ? index : null;
+  const p = mode==='edit' ? PRODUCTS[index] : null;
+  document.getElementById('productModalTitle').textContent = mode==='edit' ? 'Edit product' : 'Add product';
+  document.getElementById('productModalSaveLabel').textContent = mode==='edit' ? 'Save changes' : 'Add to catalog';
+  document.getElementById('npName').value = p ? p.name : '';
+  document.getElementById('npPrice').value = p ? p.price : '';
+  document.getElementById('npQty').value = p ? p.qty : '';
+  document.getElementById('npWas').value = p && p.wasPrice ? p.wasPrice : '';
+  document.getElementById('npDesc').value = p && p.desc ? p.desc : '';
+  document.getElementById('npDelivery').value = p ? p.delivery : 'free';
+  document.getElementById('npFee').value = p ? p.fee : '';
+  pendingProductImages = p && p.images ? [...p.images] : [];
+  renderImagePreview();
+  openModal('addProductModal');
+}
+function handleProductImages(input){
+  const files = Array.from(input.files || []).slice(0, 3 - pendingProductImages.length);
+  if(!files.length) return;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      if(pendingProductImages.length < 3){ pendingProductImages.push(e.target.result); renderImagePreview(); }
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+function removeProductImage(i){
+  pendingProductImages.splice(i,1);
+  renderImagePreview();
+}
+function renderImagePreview(){
+  document.getElementById('npImagePreview').innerHTML = pendingProductImages.map((src,i)=>`
+    <div style="position:relative;">
+      <img src="${src}" style="width:70px; height:70px; border-radius:9px; object-fit:cover; border:1px solid var(--border);">
+      <i class="fa-solid fa-circle-xmark" style="position:absolute; top:-6px; right:-6px; color:var(--danger); background:#fff; border-radius:50%; cursor:pointer;" onclick="removeProductImage(${i})"></i>
+    </div>`).join('') + (pendingProductImages.length===0 ? `<span style="font-size:12px; color:var(--text-mut);">No photos added — that's fine, they're optional.</span>` : '');
+}
+
+function saveProduct(){
+  const name = document.getElementById('npName').value.trim();
+  const price = parseFloat(document.getElementById('npPrice').value);
+  const qty = parseInt(document.getElementById('npQty').value)||0;
+  if(!name || isNaN(price)){ alert('Please provide at least a product name and price.'); return; }
+  const data = {
+    name, price, qty,
+    wasPrice: parseFloat(document.getElementById('npWas').value) || null,
+    desc: document.getElementById('npDesc').value.trim(),
+    delivery: document.getElementById('npDelivery').value,
+    fee: parseFloat(document.getElementById('npFee').value) || 0,
+    images: [...pendingProductImages],
+  };
+  if(editingProductIndex !== null){ PRODUCTS[editingProductIndex] = data; }
+  else { PRODUCTS.push(data); }
+  renderProducts();
+  closeModal('addProductModal');
+}
+
+function mockUploadFile(input){
+  if(input.files.length) alert(`"${input.files[0].name}" uploaded. Prices and stock levels have been updated — out-of-stock items are now hidden from pharmacies automatically.`);
+}
+
+function promoCard(p){
+  return `<div class="promo-card"><span class="ptag">Active</span><h4>${p.title}</h4><p>${p.desc}</p>
+    <div class="pstats"><div><strong>${p.views}</strong>views</div><div><strong>${p.redemptions}</strong>redemptions</div></div></div>`;
+}
+document.getElementById('promoCards').innerHTML = PROMOTIONS.map(promoCard).join('');
+function addPromo(){
+  const title = document.getElementById('ppTitle').value.trim();
+  const desc = document.getElementById('ppDesc').value.trim();
+  if(!title) return;
+  PROMOTIONS.unshift({title, desc, views:0, redemptions:0});
+  document.getElementById('promoCards').innerHTML = PROMOTIONS.map(promoCard).join('');
+  closeModal('addPromoModal');
+}
+
+function balanceRow(b){
+  return `<tr><td>${b.pharmacy}</td><td>${b.amount}</td><td>${b.due}</td><td><span class="badge ${b.status}">${b.status==='ok'?'On track':b.status==='low'?'Due soon':'Overdue'}</span></td><td><a class="link-action" onclick="alert('Reminder sent to ${b.pharmacy}.')">Send reminder</a></td></tr>`;
+}
+document.getElementById('balancesBody').innerHTML = BALANCES.map(balanceRow).join('');
+
+/* ---- nav ---- */
+const titles = {
+  dashboard:['Dashboard',"Here's how your business is doing today"],
+  inventory:['Stock & Pricing','Manage your catalog and what pharmacies can see'],
+  promotions:['Promotions & Ads','Visible only to pharmacies and hospitals'],
+  orders:['Incoming Orders','Confirm, pack, and dispatch'],
+  map:['Deliveries Map','Your pharmacy customers and active deliveries'],
+  payments:['Payments & Statements','Track balances and send reminders'],
+  messages:['Messages','Talk directly with pharmacies'],
+  assistant:['AI Assistant','Ask questions about your own business data'],
+  analytics:['Analytics','Sales trends and regional demand'],
+  settings:['Settings','Manage your business profile'],
+};
+function goTo(view){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+  document.getElementById('pageTitle').textContent = titles[view][0];
+  document.getElementById('pageSub').textContent = titles[view][1];
+  document.getElementById('sidebar').classList.remove('open');
+  if(view==='analytics') setTimeout(renderAnalytics, 30);
+  if(view==='map') setTimeout(initWholesalerMap, 50);
+  if(view==='messages'){ renderPharmacyChatList(); openPharmacyChat(currentPharmacyChat); }
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>goTo(n.dataset.view)));
+document.getElementById('menuToggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ---- messages (per-pharmacy chat) ---- */
+function lastPharmacyMsg(name){
+  const msgs = PHARMACY_CHATS[name].messages;
+  return msgs.length ? msgs[msgs.length-1].text : 'No messages yet';
+}
+function renderPharmacyChatList(){
+  document.getElementById('pharmacyChatList').innerHTML = Object.keys(PHARMACY_CHATS).map(name=>`
+    <div class="chat-list-item ${name===currentPharmacyChat?'active':''}" onclick="openPharmacyChat('${name.replace(/'/g,"\\'")}')">
+      <div class="cn">${name}</div><div class="cm">${lastPharmacyMsg(name)}</div>
+    </div>`).join('');
+}
+function openPharmacyChat(name){
+  currentPharmacyChat = name;
+  renderPharmacyChatList();
+  document.getElementById('msgChatAvatar').textContent = name.slice(0,2).toUpperCase();
+  document.getElementById('msgChatName').textContent = name;
+  document.getElementById('msgChatSub').textContent = 'Connected pharmacy · online';
+  const msgs = PHARMACY_CHATS[name].messages;
+  document.getElementById('msgChatBody').innerHTML = msgs.length
+    ? msgs.map(m=>`<div class="msg ${m.dir==='in'?'in':'out'}">${m.text}<div class="meta">${m.time}</div></div>`).join('')
+    : `<p style="text-align:center; color:var(--text-mut); font-size:13px; margin-top:40px;">No messages yet.</p>`;
+  document.getElementById('msgChatBody').scrollTop = 9999;
+}
+function sendMsg(){
+  const input = document.getElementById('msgChatInput');
+  if(!input.value.trim()) return;
+  PHARMACY_CHATS[currentPharmacyChat].messages.push({dir:'out', text:input.value, time:'Just now'});
+  input.value='';
+  openPharmacyChat(currentPharmacyChat);
+}
+document.getElementById('msgChatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendMsg(); });
+
+/* ---- call (driver-less here — calling a pharmacy contact) ---- */
+let currentCallContact = null;
+function openCallModal(contact){
+  currentCallContact = contact;
+  document.getElementById('callModalTitle').textContent = 'Call ' + contact.name;
+  document.getElementById('callPhoneLabel').textContent = contact.phone ? ('Opens dialer with ' + contact.phone) : 'No phone number on file';
+  openModal('callModal');
+}
+function callCurrentPharmacy(){
+  const c = PHARMACY_CHATS[currentPharmacyChat];
+  openCallModal({name: currentPharmacyChat, phone: c ? c.phone : null});
+}
+function callOnNexa(){
+  closeModal('callModal');
+  alert(`Calling ${currentCallContact.name} on Nexa... (in-app voice call connecting)`);
+}
+function callOnPhone(){
+  closeModal('callModal');
+  if(!currentCallContact.phone){ alert('No phone number on file for ' + currentCallContact.name + '.'); return; }
+  window.location.href = 'tel:' + currentCallContact.phone.replace(/\s+/g,'');
+}
+
+/* ---- targeted product recall ---- */
+function populateRecallProducts(){
+  document.getElementById('recallProduct').innerHTML = PRODUCTS.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+}
+populateRecallProducts();
+function sendRecall(){
+  const product = document.getElementById('recallProduct').value;
+  const message = document.getElementById('recallMessage').value.trim() || 'Please stop dispensing this batch and return any unused stock.';
+  const affected = [...new Set(ORDERS.filter(o=>o.items.includes(product)).map(o=>o.pharmacy))];
+  if(!affected.length){ alert(`No pharmacies have ordered ${product} from you yet — nothing to send.`); closeModal('recallModal'); return; }
+  affected.forEach(name=>{
+    if(PHARMACY_CHATS[name]) PHARMACY_CHATS[name].messages.push({dir:'out', text:`⚠️ RECALL — ${product}: ${message}`, time:'Just now'});
+  });
+  closeModal('recallModal');
+  renderPharmacyChatList();
+  alert(`Recall notice for "${product}" sent to ${affected.length} pharmac${affected.length===1?'y':'ies'} who actually ordered it: ${affected.join(', ')}.`);
+}
+
+/* ---- Deliveries Map ---- */
+mapboxgl.accessToken = 'YOUR_MAPBOX_PUBLIC_TOKEN';
+const WAREHOUSE = {name:'Your warehouse', lat:-17.8216, lng:31.0492};
+let wholesalerMapInstance = null;
+function initWholesalerMap(){
+  if(wholesalerMapInstance || !document.getElementById('wholesalerMap')) return;
+  try{
+    wholesalerMapInstance = new mapboxgl.Map({
+      container:'wholesalerMap',
+      style:'mapbox://styles/mapbox/light-v11',
+      center:[31.0335, -17.8292],
+      zoom:12
+    });
+    wholesalerMapInstance.addControl(new mapboxgl.NavigationControl());
+    new mapboxgl.Marker({color:'#0b2b44'})
+      .setLngLat([WAREHOUSE.lng, WAREHOUSE.lat])
+      .setPopup(new mapboxgl.Popup().setHTML(`<strong>${WAREHOUSE.name}</strong><br>Dispatch point for all deliveries`))
+      .addTo(wholesalerMapInstance);
+    Object.entries(PHARMACY_CHATS).forEach(([name, info])=>{
+      const activeOrder = ORDERS.find(o=>o.pharmacy===name && o.status!=='delivered');
+      const popupHtml = `<strong>${name}</strong><br>${info.phone}<br>${activeOrder ? `Order ${activeOrder.id}: ${activeOrder.status}` : 'No active order'}
+        <br><button style="margin-top:8px; padding:5px 11px; background:#0088cc; color:#fff; border:none; border-radius:6px; font-size:11px; cursor:pointer;" onclick="showRouteTo('${name.replace(/'/g,"\\'")}', ${info.lng}, ${info.lat})"><i class="fa-solid fa-route"></i> Get directions</button>`;
+      new mapboxgl.Marker({color: activeOrder ? '#0088cc' : '#94a3b8'})
+        .setLngLat([info.lng, info.lat])
+        .setPopup(new mapboxgl.Popup().setHTML(popupHtml))
+        .addTo(wholesalerMapInstance);
+    });
+  }catch(e){ /* Mapbox token not set yet */ }
+}
+
+/* ---- guided route from warehouse to a pharmacy ---- */
+let lastRouteSteps = [];
+let lastRouteDestName = '';
+function showRouteTo(name, lng, lat){
+  document.getElementById('routeInfoPanel').style.display = 'flex';
+  document.getElementById('routeInfoText').textContent = `Getting route to ${name}...`;
+  document.getElementById('routeGmapsBtn').onclick = ()=>openGoogleMapsDirections(name, lat, lng);
+  lastRouteDestName = name;
+  lastRouteSteps = [];
+
+  fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${WAREHOUSE.lng},${WAREHOUSE.lat};${lng},${lat}?geometry=geojson&overview=full&steps=true&banner_instructions=true&access_token=${mapboxgl.accessToken}`)
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.routes || !data.routes.length) throw new Error('No route');
+      const route = data.routes[0];
+      const geojson = {type:'Feature', geometry:route.geometry};
+      if(wholesalerMapInstance.getSource('route')){
+        wholesalerMapInstance.getSource('route').setData(geojson);
+      } else {
+        wholesalerMapInstance.addSource('route', {type:'geojson', data:geojson});
+        wholesalerMapInstance.addLayer({id:'route', type:'line', source:'route', layout:{'line-join':'round','line-cap':'round'}, paint:{'line-color':'#0088cc','line-width':5}});
+      }
+      const bounds = new mapboxgl.LngLatBounds([WAREHOUSE.lng, WAREHOUSE.lat], [WAREHOUSE.lng, WAREHOUSE.lat]);
+      bounds.extend([lng, lat]);
+      wholesalerMapInstance.fitBounds(bounds, {padding:70});
+      const km = (route.distance/1000).toFixed(1);
+      const mins = Math.round(route.duration/60);
+      document.getElementById('routeInfoText').textContent = `Route to ${name}: ${km} km · about ${mins} min drive from your warehouse`;
+      // Full turn-by-turn steps, kept in-app rather than requiring an external maps app
+      lastRouteSteps = (route.legs && route.legs[0] && route.legs[0].steps) ? route.legs[0].steps : [];
+    })
+    .catch(()=>{
+      // Falls back gracefully if the Mapbox token isn't set yet
+      document.getElementById('routeInfoText').textContent = `Directions to ${name} (add a Mapbox token above for an on-map route + in-app turn-by-turn)`;
+    });
+}
+
+const MANEUVER_ICONS = {
+  depart:'fa-circle-dot', arrive:'fa-flag-checkered', turn:'fa-turn-up', merge:'fa-arrows-to-dot',
+  'roundabout':'fa-rotate', fork:'fa-code-fork', 'off ramp':'fa-arrow-right-from-bracket',
+  'on ramp':'fa-arrow-right-to-bracket', continue:'fa-arrow-up', default:'fa-location-arrow',
+};
+function openTurnByTurn(){
+  if(!lastRouteDestName){ alert('Click "Get directions" on a pharmacy pin first.'); return; }
+  document.getElementById('turnByTurnTitle').textContent = `Directions to ${lastRouteDestName}`;
+  if(!lastRouteSteps.length){
+    document.getElementById('turnByTurnBody').innerHTML = `<p style="color:var(--text-mut); font-size:13.5px;">
+      Step-by-step directions need a valid Mapbox token (see the placeholder in the code). Until then, use "Open in Google Maps" for live turn-by-turn.</p>`;
+  } else {
+    document.getElementById('turnByTurnBody').innerHTML = lastRouteSteps.map((step, i)=>{
+      const type = (step.maneuver && step.maneuver.type) || 'default';
+      const icon = MANEUVER_ICONS[type] || MANEUVER_ICONS.default;
+      const instruction = (step.maneuver && step.maneuver.instruction) || 'Continue';
+      const dist = step.distance ? (step.distance > 950 ? (step.distance/1000).toFixed(1)+' km' : Math.round(step.distance)+' m') : '';
+      return `<div class="step-row ${i===0?'current':''}">
+        <div class="step-num">${i+1}</div>
+        <i class="fa-solid ${icon} step-icon"></i>
+        <div><div class="step-text">${instruction}</div>${dist ? `<div class="step-dist">${dist}</div>` : ''}</div>
+      </div>`;
+    }).join('');
+  }
+  openModal('turnByTurnModal');
+}
+function openGoogleMapsDirections(name, lat, lng){
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${WAREHOUSE.lat},${WAREHOUSE.lng}&destination=${lat},${lng}&travelmode=driving`, '_blank');
+}
+function clearRoute(){
+  if(wholesalerMapInstance){
+    if(wholesalerMapInstance.getLayer('route')) wholesalerMapInstance.removeLayer('route');
+    if(wholesalerMapInstance.getSource('route')) wholesalerMapInstance.removeSource('route');
+  }
+  document.getElementById('routeInfoPanel').style.display = 'none';
+  lastRouteSteps = [];
+  lastRouteDestName = '';
+}
+
+/* =========================================================================
+   AI ASSISTANT — scoped to this wholesaler's own business data.
+   Uses Puter.js's built-in AI (in-browser auth, no API key embedded here).
+   Swap BUSINESS_CONTEXT for a real backend fetch, and/or proxy this call
+   through your own server if you want your fine-tuned Gemini model instead.
+   ========================================================================= */
+const BUSINESS_CONTEXT = {
+  business: "MedPharm Wholesale, Harare",
+  products: PRODUCTS,
+  incoming_orders: ORDERS,
+  outstanding_balances: BALANCES,
+  active_promotions: PROMOTIONS,
+};
+const AI_SYSTEM_PROMPT = `You are the NexaHealth Assistant for a wholesaler/manufacturer account.
+You can help with anything inside this business's NexaHealth account: stock and pricing, incoming orders,
+promotions and ads, payments and outstanding balances, messages with pharmacies, and analytics (best-sellers,
+regional demand, top customers). Use the JSON context to answer accurately and give concrete numbers where
+possible. Stay scoped to this business's own NexaHealth data — decline unrelated questions (other companies'
+private data, general business consulting unrelated to the platform, etc.) briefly and redirect to what you
+can help with. Never invent data not in the context. Keep answers short and practical.
+CONTEXT: ${JSON.stringify(BUSINESS_CONTEXT)}`;
+
+function appendAiMsg(role, text){
+  const cls = role==='user' ? 'out' : 'ai';
+  document.getElementById('aiChatBody').insertAdjacentHTML('beforeend', `<div class="msg ${cls}">${text}</div>`);
+  document.getElementById('aiChatBody').scrollTop = 9999;
+}
+async function sendAiMsg(){
+  const input = document.getElementById('aiChatInput');
+  const q = input.value.trim(); if(!q) return;
+  appendAiMsg('user', q); input.value='';
+  appendAiMsg('ai', '<em>Thinking…</em>');
+  const node = document.getElementById('aiChatBody').lastElementChild;
+  try{
+    if(window.puter && puter.ai && puter.ai.chat){
+      const resp = await puter.ai.chat([{role:'system', content:AI_SYSTEM_PROMPT},{role:'user', content:q}]);
+      node.innerHTML = (resp?.message?.content || resp?.toString?.() || "Sorry, I couldn't process that.");
+    } else {
+      node.innerHTML = "AI service isn't connected yet — once your backend/Gemini integration is live, this will respond using your real business data.";
+    }
+  }catch(e){ node.innerHTML = "I couldn't reach the AI service just now. Please try again."; }
+}
+document.getElementById('aiChatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendAiMsg(); });
+
+/* ---- analytics ---- */
+function renderAnalytics(){
+  const months = [['Feb',210],['Mar',260],['Apr',240],['May',310],['Jun',290],['Jul',350]];
+  const max = Math.max(...months.map(m=>m[1]));
+  document.getElementById('ordersBarChart').innerHTML = months.map(([m,v])=>`<div class="bar-col"><div class="bar" style="height:${(v/max*100)}%"></div><div class="bl">${m}</div></div>`).join('');
+
+  const regions = [
+    {name:'Harare', pct:58, color:'#0088cc'},{name:'Bulawayo', pct:22, color:'#00b8f0'},
+    {name:'Mutare', pct:12, color:'#7fd4ec'},{name:'Gweru', pct:8, color:'#d6ecf9'},
+  ];
+  document.getElementById('regionDemand').innerHTML = regions.map(r=>`
+    <div class="region-row"><div class="sp-name">${r.name}</div><div class="sp-bar-bg"><div class="sp-bar-fill" style="width:${r.pct}%; background:${r.color}"></div></div><div class="sp-pct">${r.pct}%</div></div>`).join('');
+
+  const donutData = [{l:'Amoxicillin',v:36,c:'#0088cc'},{l:'Paracetamol',v:26,c:'#00b8f0'},{l:'Cetirizine',v:22,c:'#7fd4ec'},{l:'Other',v:16,c:'#d6ecf9'}];
+  let acc=0; const gradient = donutData.map(d=>{ const start=acc; acc+=d.v; return `${d.c} ${start}% ${acc}%`; }).join(',');
+  document.getElementById('topProdDonut').style.background = `conic-gradient(${gradient})`;
+  document.getElementById('donutLegend').innerHTML = donutData.map(d=>`<div class="legend-item"><span class="legend-dot" style="background:${d.c}"></span>${d.l} — ${d.v}%</div>`).join('');
+
+  const topPharmacies = [
+    {name:'City Pharmacy', most:'Amoxicillin 500mg', orders:14, spend:'$1,890'},
+    {name:'Greenwood Pharmacy', most:'Cetirizine 10mg', orders:11, spend:'$1,240'},
+    {name:'Sunrise Pharmacy', most:'Paracetamol 500mg', orders:9, spend:'$2,100'},
+  ];
+  document.getElementById('topPharmaciesBody').innerHTML = topPharmacies.map(p=>`<tr><td><strong>${p.name}</strong></td><td>${p.most}</td><td>${p.orders}</td><td>${p.spend}</td></tr>`).join('');
+}
+</script>
+</body>
+</html>

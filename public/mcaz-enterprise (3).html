@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexaHealth — MCAZ National Regulatory Command Centre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
+<script src="https://js.puter.com/v2/"></script>
+<style>
+:root{
+  --primary:#0088cc;--primary-dark:#0b2b44;--primary-light:#e6f4fb;--primary-soft:#d6ecf9;
+  --success:#16a34a;--success-bg:#e8f8ee;--warning:#f59e0b;--warning-bg:#fef6e7;
+  --danger:#dc2626;--danger-bg:#fdecec;--purple:#7c3aed;--purple-bg:#f3f0ff;
+  --bg:#f4f7fa;--surface:#ffffff;--border:#e3e9ef;--text:#152238;
+  --text-mut:#64748b;--text-faint:#94a3b8;
+  --radius:14px;--radius-sm:8px;
+  --shadow:0 1px 2px rgba(11,43,68,.04),0 4px 16px rgba(11,43,68,.06);
+  --shadow-lg:0 8px 30px rgba(11,43,68,.12);
+  --sidebar-w:252px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14.5px;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:#c1d4e0;border-radius:6px;}
+.app{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--primary-dark);color:#cfe3f0;position:fixed;top:0;left:0;bottom:0;z-index:100;display:flex;flex-direction:column;transition:transform .25s ease;}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:22px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#00b8f0);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:15px;flex-shrink:0;}
+.brand-name{font-weight:700;color:#fff;font-size:16.5px;line-height:1.1;}
+.brand-role{font-size:11px;color:#7fa8c2;text-transform:uppercase;letter-spacing:.05em;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:16px 12px;}
+.nav-group-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#5f88a3;padding:14px 12px 6px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;margin-bottom:2px;color:#c3dbe9;font-weight:500;font-size:14px;position:relative;transition:background .15s,color .15s;cursor:pointer;}
+.nav-item i{width:18px;text-align:center;font-size:15px;color:#7fa8c2;flex-shrink:0;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+.nav-item.active{background:var(--primary);color:#fff;}
+.nav-item.active i{color:#fff;}
+.nav-item .nbadge{margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;background:var(--danger);color:#fff;}
+.nav-item .nbadge.warn{background:var(--warning);}
+.sidebar-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.foot-avatar{width:34px;height:34px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0;}
+.foot-name{font-size:13px;color:#fff;font-weight:600;line-height:1.2;}
+.foot-sub{font-size:11.5px;color:#7fa8c2;}
+.foot-logout{margin-left:auto;color:#7fa8c2;cursor:pointer;font-size:15px;}
+.foot-logout:hover{color:#fff;}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0;}
+
+/* LIVE TICKER */
+.live-ticker{background:var(--primary-dark);color:#9bbdd4;padding:7px 20px;display:flex;align-items:center;gap:14px;font-size:11.5px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:blink 1.4s infinite;flex-shrink:0;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3};}
+.ticker-wrap{flex:1;overflow:hidden;white-space:nowrap;}
+.ticker-inner{display:inline-block;animation:ticker 40s linear infinite;}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* TOPBAR */
+.topbar{height:68px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 22px;position:sticky;top:0;z-index:100;flex-shrink:0;}
+.menu-toggle{display:none;font-size:18px;color:var(--text-mut);cursor:pointer;}
+.topbar-title{font-size:18px;font-weight:700;color:var(--primary-dark);}
+.topbar-sub{font-size:11.5px;color:var(--text-mut);margin-top:1px;}
+.topbar-search{flex:1;max-width:420px;margin-left:12px;display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 14px;}
+.topbar-search input{flex:1;border:none;background:none;outline:none;font-size:13.5px;color:var(--text);}
+.topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.icon-btn{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text-mut);font-size:16px;position:relative;transition:background .15s;}
+.icon-btn:hover{background:var(--bg);}
+.icon-btn .bdot{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--danger);border:2px solid var(--surface);}
+.topbar-profile{display:flex;align-items:center;gap:10px;padding-left:12px;border-left:1px solid var(--border);}
+.tp-name{font-size:13.5px;font-weight:600;}
+.tp-org{font-size:11.5px;color:var(--text-mut);}
+
+/* CONTENT */
+.content{padding:26px;flex:1;}
+.view{display:none;}
+.view.active{display:block;animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+
+/* GRIDS */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+.g21{display:grid;grid-template-columns:1.7fr 1fr;gap:18px;margin-bottom:18px;}
+
+/* PANEL */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:22px;}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+.ph h3{font-size:15px;font-weight:700;color:var(--primary-dark);}
+.ph-sub{font-size:12px;color:var(--text-mut);margin-top:2px;font-weight:400;}
+.pb{padding:22px;}
+
+/* STAT CARD */
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s;}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+.sc-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:14px;}
+.blue{background:var(--primary-light);color:var(--primary);}
+.red{background:var(--danger-bg);color:var(--danger);}
+.amber{background:var(--warning-bg);color:var(--warning);}
+.green{background:var(--success-bg);color:var(--success);}
+.purple{background:var(--purple-bg);color:var(--purple);}
+.sc-val{font-size:26px;font-weight:800;color:var(--primary-dark);margin-top:14px;}
+.sc-lbl{font-size:12.5px;color:var(--text-mut);margin-top:2px;}
+.sc-trend{font-size:11.5px;font-weight:600;margin-top:8px;display:flex;align-items:center;gap:4px;}
+.tu{color:var(--success);}.td{color:var(--danger);}.tf{color:var(--text-faint);}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;}
+.bok{background:var(--success-bg);color:var(--success);}
+.bwarn{background:var(--warning-bg);color:#b57a05;}
+.bdanger{background:var(--danger-bg);color:var(--danger);}
+.binfo{background:var(--primary-light);color:var(--primary);}
+.bpurple{background:var(--purple-bg);color:var(--purple);}
+.bdark{background:#1e293b;color:#fff;}
+
+/* RISK RING */
+.risk-ring{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:3px solid;}
+.rl-low{border-color:var(--success);color:var(--success);}
+.rl-medium{border-color:var(--warning);color:var(--warning);}
+.rl-high{border-color:#f97316;color:#f97316;}
+.rl-critical{border-color:var(--danger);color:var(--danger);}
+
+/* TABLE */
+.dt{width:100%;border-collapse:collapse;}
+.dt th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-mut);padding:0 22px 12px;font-weight:600;}
+.dt td{padding:14px 22px;border-top:1px solid var(--border);font-size:13.5px;vertical-align:middle;}
+.dt tbody tr:hover{background:#f8fbfd;}
+.tw{overflow-x:auto;}
+
+/* BUTTONS */
+.btn{padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:background .15s;white-space:nowrap;cursor:pointer;border:none;}
+.btn-primary{background:var(--primary);color:#fff;}.btn-primary:hover{background:#0077b3;}
+.btn-danger{background:var(--danger);color:#fff;}.btn-danger:hover{background:#b91c1c;}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--text);}.btn-outline:hover{border-color:var(--primary);color:var(--primary);}
+.btn-ghost{background:transparent;color:var(--primary);padding:6px 10px;}.btn-ghost:hover{background:var(--primary-light);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-block{width:100%;justify-content:center;}
+.btn-icon{width:34px;height:34px;padding:0;justify-content:center;border-radius:8px;}
+.pact{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+/* FORMS */
+.fg{margin-bottom:13px;}
+.fg label{display:block;font-size:11.5px;font-weight:700;color:var(--text-mut);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em;}
+.fc{width:100%;border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .15s;background:#fff;}
+.fc:focus{border-color:var(--primary);}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fgrid .full{grid-column:1/-1;}
+
+/* FILTER TABS */
+.ftabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg);}
+.ftab{padding:6px 15px;border-radius:20px;font-size:12.5px;font-weight:600;background:#fff;color:var(--text-mut);border:1px solid var(--border);cursor:pointer;transition:all .12s;}
+.ftab.active{background:var(--primary);color:#fff;border-color:var(--primary);}.ftab:hover:not(.active){border-color:var(--primary);color:var(--primary);}
+.ftab.fdanger.active{background:var(--danger);border-color:var(--danger);}
+
+/* ALERT ITEM */
+.aitem{display:flex;gap:11px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .1s;}
+.aitem:last-child{border-bottom:none;}
+.aitem:hover{background:#fafcfe;}
+.aico{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.aico-red{background:var(--danger-bg);color:var(--danger);}
+.aico-warn{background:var(--warning-bg);color:var(--warning);}
+.aico-info{background:var(--primary-light);color:var(--primary);}
+.aico-green{background:var(--success-bg);color:var(--success);}
+.aico-purple{background:var(--purple-bg);color:var(--purple);}
+.at-title{font-size:13.5px;font-weight:600;}
+.at-sub{font-size:11.5px;color:var(--text-mut);margin-top:2px;}
+.at-time{font-size:11px;color:var(--text-faint);white-space:nowrap;margin-left:auto;padding-top:2px;}
+.pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.pdot-critical{background:var(--danger);}
+.pdot-high{background:var(--warning);}
+.pdot-medium{background:var(--primary);}
+.pdot-low{background:var(--text-faint);}
+
+/* MAP */
+#reg-map{width:100%;height:500px;border-radius:0 0 var(--radius) var(--radius);}
+#trace-map{width:100%;height:340px;border-radius:var(--radius);}
+.map-info{position:absolute;bottom:12px;right:12px;z-index:10;background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;width:270px;box-shadow:var(--shadow-lg);display:none;}
+.map-info.show{display:block;}
+.map-wrap{position:relative;}
+.mip-close{position:absolute;top:10px;right:12px;cursor:pointer;color:var(--text-mut);font-size:14px;}
+.check-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;cursor:pointer;}
+.check-row input{width:14px;height:14px;accent-color:var(--primary);}
+
+/* SUPPLY CHAIN */
+.sc-flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:18px 20px;}
+.sc-node{background:#fff;border:2px solid var(--border);border-radius:12px;padding:14px 16px;min-width:155px;cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:center;flex-shrink:0;}
+.sc-node:hover,.sc-node.sel{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+.sc-node.flagged{border-color:var(--danger);background:var(--danger-bg);}
+.sc-node-icon{font-size:22px;margin-bottom:7px;}
+.sc-node-name{font-size:13px;font-weight:700;}
+.sc-node-sub{font-size:11.5px;color:var(--text-mut);margin-top:2px;}
+.sc-node-detail{background:var(--primary-light);border-radius:8px;padding:10px;margin-top:10px;display:none;font-size:12px;text-align:left;}
+.sc-node-detail.show{display:block;}
+.sc-arrow{display:flex;align-items:center;padding:0 6px;color:var(--text-faint);font-size:18px;flex-shrink:0;}
+.sc-arrow.pulse i{animation:arrowPulse .9s infinite;}
+@keyframes arrowPulse{0%,100%{transform:translateX(0);opacity:.5;}50%{transform:translateX(4px);opacity:1;}}
+
+/* RECALLS */
+.recall-card{border:2px solid var(--danger);border-radius:12px;padding:18px;margin-bottom:14px;}
+.rbar{height:10px;background:var(--bg);border-radius:20px;overflow:hidden;margin:8px 0 4px;}
+.rbar-fill{height:100%;border-radius:20px;}
+.rstats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);margin-top:12px;}
+.rstat{text-align:center;padding:10px;}
+.rstat-v{font-size:21px;font-weight:800;color:var(--primary-dark);}
+.rstat-l{font-size:11.5px;color:var(--text-mut);margin-top:2px;}
+.rstats .rstat{border-right:1px solid var(--border);}
+.rstats .rstat:last-child{border-right:none;}
+
+/* INSP / COMPLAINT CARDS */
+.icard{border:1px solid var(--border);border-radius:12px;padding:15px;margin-bottom:11px;transition:box-shadow .15s;}
+.icard:hover{box-shadow:var(--shadow-lg);}
+
+/* SCORE BAR */
+.sbar-track{height:8px;background:var(--bg);border-radius:20px;overflow:hidden;margin-top:3px;}
+.sbar-fill{height:100%;border-radius:20px;transition:width .5s;}
+
+/* ENTITY PROFILE */
+.ep-head{background:linear-gradient(135deg,var(--primary-dark),#1a4060);color:#fff;padding:22px 24px;display:flex;gap:16px;align-items:flex-start;position:relative;}
+.ep-av{width:60px;height:60px;border-radius:13px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex-shrink:0;}
+.ep-name{font-size:19px;font-weight:800;margin-bottom:3px;}
+.ep-meta{font-size:13px;color:rgba(255,255,255,.7);}
+.ep-close{position:absolute;top:14px;right:18px;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;}
+.ep-tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;}
+.ep-tab{padding:11px 18px;font-size:13px;font-weight:600;color:var(--text-mut);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;}
+.ep-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+
+/* AUDIT */
+.audit-row{display:flex;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);font-size:12.5px;}
+.audit-row:hover{background:#fafcfe;}
+.atime{color:var(--text-faint);width:90px;flex-shrink:0;}
+.aaction{font-weight:600;flex:1;}
+.auser{color:var(--text-mut);width:140px;flex-shrink:0;}
+.adetail{color:var(--text-mut);font-size:11.5px;}
+
+/* QR */
+.qr-zone{border:3px dashed var(--border);border-radius:12px;padding:36px;text-align:center;color:var(--text-faint);cursor:pointer;transition:border-color .15s;}
+.qr-zone:hover{border-color:var(--primary);color:var(--primary);}
+.qr-result{background:var(--primary-light);border:1px solid var(--primary-soft);border-radius:12px;padding:18px;margin-top:14px;}
+
+/* AI */
+.ai-alert-item{border-left:4px solid var(--danger);background:var(--danger-bg);border-radius:0 10px 10px 0;padding:13px 15px;margin-bottom:10px;}
+.ai-alert-item.warn{border-color:var(--warning);background:var(--warning-bg);}
+.ai-alert-item.info{border-color:var(--primary);background:var(--primary-light);}
+.ai-alert-item.purple{border-color:var(--purple);background:var(--purple-bg);}
+.ai-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+.ai-title{font-size:13.5px;font-weight:700;}
+.ai-conf{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(0,0,0,.08);}
+.ai-body{font-size:12.5px;color:var(--text-mut);}
+.ai-actions{display:flex;gap:8px;margin-top:9px;}
+
+/* NOTIFICATION DRAWER */
+.ndrawer{position:fixed;top:0;right:0;bottom:0;width:370px;background:#fff;border-left:1px solid var(--border);z-index:300;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);}
+.ndrawer.open{transform:translateX(0);}
+.nhead{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.nbody{flex:1;overflow-y:auto;}
+.overlay{position:fixed;inset:0;background:rgba(11,43,68,.3);z-index:299;display:none;}
+.overlay.show{display:block;}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(11,43,68,.45);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal.show{display:flex;}
+.mbox{background:#fff;border-radius:var(--radius);width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
+.mbox.wide{max-width:700px;}.mbox.xl{max-width:940px;}
+.mhead{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;}
+.mhead h3{font-size:15px;font-weight:700;}
+.mclose{cursor:pointer;color:var(--text-mut);font-size:16px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+.mclose:hover{background:var(--bg);}
+.mbody{padding:20px;}
+.mfoot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+/* CHARTS */
+.bar-chart{display:flex;align-items:flex-end;gap:9px;height:160px;padding-top:10px;}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.bc-bar{width:100%;max-width:34px;border-radius:5px 5px 0 0;}
+.bc-bar-blue{background:linear-gradient(180deg,var(--primary),#00b8f0);}
+.bc-bar-green{background:linear-gradient(180deg,var(--success),#22c55e);}
+.bc-bar-red{background:linear-gradient(180deg,var(--danger),#f97316);}
+.bc-lbl{font-size:10.5px;color:var(--text-mut);}
+.donut{width:130px;height:130px;border-radius:50%;flex-shrink:0;}
+.dwrap{display:flex;align-items:center;gap:18px;}
+.litem{display:flex;align-items:center;gap:7px;font-size:12.5px;margin-bottom:7px;}
+.ldot{width:9px;height:9px;border-radius:2px;}
+
+/* MISC */
+.link-a{color:var(--primary);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;}
+.link-a:hover{text-decoration:underline;}
+.link-d{color:var(--danger);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;}
+.link-d:hover{text-decoration:underline;}
+.empty{text-align:center;padding:36px 20px;color:var(--text-mut);}
+.empty i{font-size:30px;margin-bottom:10px;display:block;color:var(--text-faint);}
+
+/* RESPONSIVE */
+@media(max-width:1260px){.g4{grid-template-columns:repeat(2,1fr);}.g21{grid-template-columns:1fr;}}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.mo{transform:translateX(0);}
+  .main{margin-left:0;}.menu-toggle{display:block;}
+  .topbar-search{display:none;}
+  .g4,.g3,.g2,.g21{grid-template-columns:1fr;}
+  .rstats{grid-template-columns:repeat(2,1fr);}
+  .fgrid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-mark">M</div>
+    <div><div class="brand-name">NexaHealth</div><div class="brand-role">MCAZ Regulator</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Command Centre</div>
+    <a class="nav-item active" data-view="dashboard"><i class="fa-solid fa-satellite-dish"></i>Live Dashboard</a>
+    <a class="nav-item" data-view="map"><i class="fa-solid fa-map-location-dot"></i>Regulatory Map</a>
+    <div class="nav-group-label">Surveillance</div>
+    <a class="nav-item" data-view="transactions"><i class="fa-solid fa-exchange-alt"></i>All Transactions</a>
+    <a class="nav-item" data-view="trace"><i class="fa-solid fa-route"></i>Supply Chain Trace</a>
+    <a class="nav-item" data-view="recalls"><i class="fa-solid fa-triangle-exclamation"></i>Recall Command<span class="nbadge">3</span></a>
+    <a class="nav-item" data-view="complaints"><i class="fa-solid fa-circle-exclamation"></i>Complaints<span class="nbadge warn">5</span></a>
+    <div class="nav-group-label">Entities</div>
+    <a class="nav-item" data-view="entities"><i class="fa-solid fa-building-shield"></i>Entity Registry</a>
+    <a class="nav-item" data-view="licences"><i class="fa-solid fa-certificate"></i>Licence Monitor<span class="nbadge warn">4</span></a>
+    <a class="nav-item" data-view="inspections"><i class="fa-solid fa-clipboard-check"></i>Inspections</a>
+    <div class="nav-group-label">Intelligence</div>
+    <a class="nav-item" data-view="ai"><i class="fa-solid fa-brain"></i>AI Intelligence<span class="nbadge">7</span></a>
+    <a class="nav-item" data-view="analytics"><i class="fa-solid fa-chart-line"></i>Analytics</a>
+    <a class="nav-item" data-view="audit"><i class="fa-solid fa-shield-check"></i>Audit Trail</a>
+    <a class="nav-item" data-view="qr"><i class="fa-solid fa-qrcode"></i>QR / Barcode</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="foot-avatar">DR</div>
+    <div><div class="foot-name">Dr. R. Ncube</div><div class="foot-sub">Senior Inspector · MCAZ</div></div>
+    <i class="fa-solid fa-right-from-bracket foot-logout"></i>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- TICKER -->
+<div class="live-ticker">
+  <div class="live-dot"></div>
+  <span style="font-weight:700;color:#fff;white-space:nowrap;font-size:11px;">LIVE</span>
+  <div class="ticker-wrap">
+    <span class="ticker-inner">TX-8801: MedPharm → City Pharmacy, 500u Amoxicillin CLEARED &nbsp;|&nbsp; TX-8803: PharmaCorp → Sunrise FLAGGED risk 88/100 &nbsp;|&nbsp; ALERT: Batch #X9901 suspected counterfeit — Bulawayo &nbsp;|&nbsp; RECALL RC-001: 8/14 pharmacies confirmed &nbsp;|&nbsp; LICENCE EXPIRY: ZimDrug Distributors — 14 days &nbsp;|&nbsp; NEW COMPLAINT CMP-005: supply diversion, Midlands &nbsp;|&nbsp; INSPECTION INS-042 overdue — ZimDrug Distributors &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TX-8801: MedPharm → City Pharmacy, 500u Amoxicillin CLEARED &nbsp;|&nbsp; TX-8803: PharmaCorp → Sunrise FLAGGED risk 88/100 &nbsp;|&nbsp; ALERT: Batch #X9901 suspected counterfeit — Bulawayo &nbsp;|&nbsp; RECALL RC-001: 8/14 pharmacies confirmed</span>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <i class="fa-solid fa-bars menu-toggle" id="menuToggle"></i>
+  <div><div class="topbar-title" id="pageTitle">National Command Centre</div><div class="topbar-sub" id="pageSub">Real-time regulatory oversight · Zimbabwe</div></div>
+  <div class="topbar-search"><i class="fa-solid fa-magnifying-glass" style="color:var(--text-faint);font-size:13px;"></i><input type="text" placeholder="Search entity, batch, medicine, licence..."></div>
+  <div class="topbar-actions">
+    <div class="icon-btn" onclick="toggleDrawer()"><i class="fa-regular fa-bell"></i><span class="bdot"></span></div>
+    <div class="icon-btn" onclick="alert('Exporting regulatory report...')"><i class="fa-solid fa-file-export"></i></div>
+    <div class="topbar-profile">
+      <div class="foot-avatar">DR</div>
+      <div><div class="tp-name">Dr. R. Ncube</div><div class="tp-org">MCAZ · Senior Inspector</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="content">
+<!-- VIEW: DASHBOARD -->
+<section class="view active" id="view-dashboard">
+  <div class="g4">
+    <div class="sc"><div class="sc-ico blue"><i class="fa-solid fa-exchange-alt"></i></div><div class="sc-val" id="kpi-tx">1,284</div><div class="sc-lbl">Transactions today</div><div class="sc-trend tu"><i class="fa-solid fa-arrow-up"></i>8.4% vs yesterday</div></div>
+    <div class="sc"><div class="sc-ico red"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="sc-val">3</div><div class="sc-lbl">Active recalls</div><div class="sc-trend td"><i class="fa-solid fa-circle-exclamation"></i>Needs resolution</div></div>
+    <div class="sc"><div class="sc-ico amber"><i class="fa-solid fa-ban"></i></div><div class="sc-val">2</div><div class="sc-lbl">Suspended entities</div><div class="sc-trend tf"><i class="fa-solid fa-minus"></i>No change this week</div></div>
+    <div class="sc"><div class="sc-ico green"><i class="fa-solid fa-building-shield"></i></div><div class="sc-val">94.2%</div><div class="sc-lbl">Platform compliance</div><div class="sc-trend tu"><i class="fa-solid fa-arrow-up"></i>1.4% this month</div></div>
+  </div>
+  <div class="g4">
+    <div class="sc"><div class="sc-ico purple"><i class="fa-solid fa-skull-crossbones"></i></div><div class="sc-val">2</div><div class="sc-lbl">Counterfeit alerts</div><div class="sc-trend td"><i class="fa-solid fa-arrow-up"></i>1 new today</div></div>
+    <div class="sc"><div class="sc-ico amber"><i class="fa-solid fa-clipboard-check"></i></div><div class="sc-val">7</div><div class="sc-lbl">Inspections due</div><div class="sc-trend td"><i class="fa-solid fa-calendar-xmark"></i>2 overdue</div></div>
+    <div class="sc"><div class="sc-ico red"><i class="fa-solid fa-certificate"></i></div><div class="sc-val">4</div><div class="sc-lbl">Licences expiring</div><div class="sc-trend td"><i class="fa-solid fa-arrow-up"></i>Action required</div></div>
+    <div class="sc"><div class="sc-ico green"><i class="fa-solid fa-truck-fast"></i></div><div class="sc-val">18</div><div class="sc-lbl">Active deliveries</div><div class="sc-trend tu"><i class="fa-solid fa-arrow-up"></i>3 more than yesterday</div></div>
+  </div>
+  <div class="g21">
+    <div class="panel"><div class="ph"><div><h3>Live transaction feed</h3><div class="ph-sub">Every trade on the platform — auto-flagging suspicious activity</div></div><div class="pact"><span class="badge bok" style="animation:blink 2s infinite;"><i class="fa-solid fa-circle" style="font-size:8px;"></i>Live</span><button class="btn btn-outline btn-sm" onclick="goTo('transactions')">View all</button></div></div><div class="tw"><table class="dt"><thead><tr><th>ID</th><th>Time</th><th>From</th><th>To</th><th>Medicine</th><th>Qty</th><th>Risk</th><th>Status</th></tr></thead><tbody id="d-tx"></tbody></table></div></div>
+    <div class="panel"><div class="ph"><div><h3><i class="fa-solid fa-brain" style="color:var(--purple);margin-right:6px;"></i>AI Intelligence</h3><div class="ph-sub">Proactive risk detection</div></div><button class="btn btn-ghost btn-sm" onclick="goTo('ai')">View all <i class="fa-solid fa-arrow-right"></i></button></div><div id="d-ai"></div></div>
+  </div>
+  <div class="g2">
+    <div class="panel"><div class="ph"><h3>Compliance alerts</h3></div><div id="d-alerts"></div></div>
+    <div class="panel"><div class="ph"><h3>High-risk entities</h3><div class="ph-sub">Requires immediate attention</div></div><div class="tw"><table class="dt"><thead><tr><th>Entity</th><th>Type</th><th>Risk</th><th>Issue</th></tr></thead><tbody id="d-risk"></tbody></table></div></div>
+  </div>
+</section>
+
+<!-- VIEW: MAP -->
+<section class="view" id="view-map">
+  <div class="panel">
+    <div class="ph"><div><h3>Regulatory Operations Map</h3><div class="ph-sub">Pharmacies, wholesalers, manufacturers, recalls, counterfeits, live deliveries</div></div>
+      <div class="pact">
+        <select class="fc" style="width:160px;padding:7px 11px;font-size:12.5px;" id="mapProv" onchange="filterMap()"><option value="all">All provinces</option><option>Harare</option><option>Bulawayo</option><option>Manicaland</option><option>Masvingo</option><option>Midlands</option></select>
+        <button class="btn btn-outline btn-sm" onclick="resetMap()"><i class="fa-solid fa-rotate-left"></i>Reset</button>
+      </div>
+    </div>
+    <div class="ftabs">
+      <label class="check-row"><input type="checkbox" id="ml-pharmacy" checked onchange="toggleLayer('pharmacy')"><i class="fa-solid fa-circle" style="color:#0088cc;font-size:10px;"></i>Pharmacies</label>
+      <label class="check-row"><input type="checkbox" id="ml-wholesale" checked onchange="toggleLayer('wholesale')"><i class="fa-solid fa-circle" style="color:#16a34a;font-size:10px;"></i>Wholesalers</label>
+      <label class="check-row"><input type="checkbox" id="ml-manufacturer" checked onchange="toggleLayer('manufacturer')"><i class="fa-solid fa-circle" style="color:#7c3aed;font-size:10px;"></i>Manufacturers</label>
+      <label class="check-row"><input type="checkbox" id="ml-recall" checked onchange="toggleLayer('recall')"><i class="fa-solid fa-circle" style="color:#dc2626;font-size:10px;"></i>Active recalls</label>
+      <label class="check-row"><input type="checkbox" id="ml-counterfeit" checked onchange="toggleLayer('counterfeit')"><i class="fa-solid fa-circle" style="color:#f59e0b;font-size:10px;"></i>Counterfeits</label>
+      <label class="check-row"><input type="checkbox" id="ml-delivery" checked onchange="toggleLayer('delivery')"><i class="fa-solid fa-circle" style="color:#f97316;font-size:10px;"></i>Live deliveries</label>
+    </div>
+    <div class="map-wrap"><div id="reg-map"></div><div class="map-info" id="mapInfo"><i class="fa-solid fa-xmark mip-close" onclick="document.getElementById('mapInfo').classList.remove('show')"></i><div id="mapInfoContent"></div></div></div>
+  </div>
+</section>
+
+<!-- VIEW: TRANSACTIONS -->
+<section class="view" id="view-transactions">
+  <div class="panel">
+    <div class="ph"><div><h3>Transaction audit log</h3><div class="ph-sub">Complete record of every trade — click any row to view full audit chain</div></div><div class="pact"><select class="fc" style="width:140px;padding:7px 11px;font-size:12.5px;"><option>All statuses</option><option>Cleared</option><option>Flagged</option></select><button class="btn btn-outline btn-sm" onclick="alert('Exporting audit log...')"><i class="fa-solid fa-file-export"></i>Export</button><button class="btn btn-danger btn-sm" onclick="alert('Generating suspicious activity report...')"><i class="fa-solid fa-flag"></i>Flag report</button></div></div>
+    <div class="ftabs"><button class="ftab active" onclick="filterTx(this,'all')">All</button><button class="ftab" onclick="filterTx(this,'ok')">Cleared</button><button class="ftab fdanger" onclick="filterTx(this,'warn')">Flagged</button><button class="ftab fdanger" onclick="filterTx(this,'high')">High Risk</button></div>
+    <div class="tw"><table class="dt"><thead><tr><th>Tx ID</th><th>Date / Time</th><th>From</th><th>To</th><th>Medicine</th><th>Batch</th><th>Qty</th><th>Value</th><th>Risk</th><th>Status</th><th></th></tr></thead><tbody id="t-tx"></tbody></table></div>
+  </div>
+</section>
+
+<!-- VIEW: TRACE -->
+<section class="view" id="view-trace">
+  <div class="panel"><div class="ph"><div><h3><i class="fa-solid fa-route" style="color:var(--primary);margin-right:7px;"></i>Supply Chain Trace</h3><div class="ph-sub">Interactive graph — trace any batch from manufacturer to patient</div></div></div>
+    <div class="pb" style="display:flex;gap:10px;"><input id="traceInput" class="fc" type="text" placeholder="Enter batch #, medicine name, or entity name" style="flex:1;"><button class="btn btn-primary" onclick="runTrace()"><i class="fa-solid fa-magnifying-glass"></i>Trace</button><button class="btn btn-outline" onclick="clearTrace()"><i class="fa-solid fa-rotate-left"></i>Clear</button></div>
+  </div>
+  <div id="traceArea" style="display:none;">
+    <div class="panel"><div class="ph"><div><h3 id="traceTitle">Supply chain</h3><div class="ph-sub">Click any node to expand details</div></div><div class="pact"><button class="btn btn-danger btn-sm" onclick="openModal('flagModal')"><i class="fa-solid fa-gavel"></i>Regulatory action</button><button class="btn btn-outline btn-sm" onclick="alert('Exporting trace report...')"><i class="fa-solid fa-file-export"></i>Export</button></div></div><div class="sc-flow" id="scFlow"></div></div>
+    <div class="panel"><div class="ph"><h3>Batch movement map</h3><div class="ph-sub">Animated route showing how this batch moved across Zimbabwe</div></div><div class="pb"><div id="trace-map" style="height:340px;border-radius:var(--radius-sm);"></div></div></div>
+  </div>
+</section>
+
+<!-- VIEW: RECALLS -->
+<section class="view" id="view-recalls">
+  <div class="panel"><div class="ph"><div><h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);margin-right:7px;"></i>Recall Command Centre</h3><div class="ph-sub">Track recall progress, compliance, recovered quantities, and escalations</div></div><button class="btn btn-danger btn-sm" onclick="openModal('newRecallModal')"><i class="fa-solid fa-plus"></i>Issue recall</button></div></div>
+  <div id="recallBody"></div>
+</section>
+
+<!-- VIEW: COMPLAINTS -->
+<section class="view" id="view-complaints">
+  <div class="panel"><div class="ph"><div><h3>Complaint Investigation Workflow</h3><div class="ph-sub">From submission → investigation → evidence → outcome → closure</div></div><button class="btn btn-primary btn-sm" onclick="openModal('newComplaintModal')"><i class="fa-solid fa-plus"></i>Log complaint</button></div>
+    <div class="ftabs"><button class="ftab active" onclick="fComp(this,'all')">All</button><button class="ftab fdanger" onclick="fComp(this,'open')">Open</button><button class="ftab" onclick="fComp(this,'investigating')">Investigating</button><button class="ftab" onclick="fComp(this,'closed')">Closed</button></div>
+    <div class="pb" id="compBody"></div>
+  </div>
+</section>
+
+<!-- VIEW: ENTITIES -->
+<section class="view" id="view-entities">
+  <div class="panel"><div class="ph"><div><h3>Entity Registry</h3><div class="ph-sub">All registered pharmacies, wholesalers, and manufacturers with live risk scores</div></div><div class="pact"><select class="fc" style="width:150px;padding:7px 11px;font-size:12.5px;" onchange="fEntities(this.value)"><option value="all">All types</option><option value="pharmacy">Pharmacies</option><option value="wholesaler">Wholesalers</option><option value="manufacturer">Manufacturers</option></select><button class="btn btn-primary btn-sm" onclick="openModal('addEntityModal')"><i class="fa-solid fa-plus"></i>Register entity</button></div></div><div class="tw"><table class="dt"><thead><tr><th>Entity</th><th>Type</th><th>Licence</th><th>Expiry</th><th>Location</th><th>Risk Score</th><th>Status</th><th></th></tr></thead><tbody id="entBody"></tbody></table></div></div>
+</section>
+
+<!-- VIEW: LICENCES -->
+<section class="view" id="view-licences">
+  <div class="panel"><div class="ph"><div><h3>Licence Monitor</h3><div class="ph-sub">Auto-tracked renewals — trading restricted automatically after expiry</div></div></div>
+    <div class="ftabs"><button class="ftab fdanger active" onclick="fLic(this,'critical')">Expired</button><button class="ftab fdanger" onclick="fLic(this,'7')">7 days</button><button class="ftab" onclick="fLic(this,'30')">30 days</button><button class="ftab" onclick="fLic(this,'60')">60 days</button><button class="ftab" onclick="fLic(this,'90')">90 days</button><button class="ftab" onclick="fLic(this,'all')">All</button></div>
+    <div class="tw"><table class="dt"><thead><tr><th>Entity</th><th>Licence #</th><th>Type</th><th>Expiry</th><th>Days remaining</th><th>Status</th><th></th></tr></thead><tbody id="licBody"></tbody></table></div>
+  </div>
+</section>
+
+<!-- VIEW: INSPECTIONS -->
+<section class="view" id="view-inspections">
+  <div class="g3" id="inspStats"></div>
+  <div class="panel"><div class="ph"><div><h3>Inspection Management</h3><div class="ph-sub">Schedule, conduct, track — digital forms, scores, violations, and corrective actions</div></div><div class="pact"><button class="btn btn-outline btn-sm" onclick="openModal('schedModal')"><i class="fa-solid fa-calendar-plus"></i>Schedule</button><button class="btn btn-primary btn-sm" onclick="openModal('newInspModal')"><i class="fa-solid fa-clipboard-list"></i>New inspection</button></div></div>
+    <div class="ftabs"><button class="ftab active" onclick="fInsp(this,'all')">All</button><button class="ftab fdanger" onclick="fInsp(this,'overdue')">Overdue</button><button class="ftab" onclick="fInsp(this,'scheduled')">Scheduled</button><button class="ftab" onclick="fInsp(this,'completed')">Completed</button></div>
+    <div class="pb" id="inspBody"></div>
+  </div>
+</section>
+
+<!-- VIEW: AI INTELLIGENCE -->
+<section class="view" id="view-ai">
+  <div class="panel"><div class="ph"><div><h3><i class="fa-solid fa-brain" style="color:var(--purple);margin-right:7px;"></i>AI Regulatory Intelligence</h3><div class="ph-sub">Proactive alerts — not waiting for questions. Auto-generated from transaction analysis.</div></div><div class="pact"><span class="badge bpurple">7 active alerts</span><button class="btn btn-outline btn-sm" onclick="renderAI()"><i class="fa-solid fa-rotate"></i>Refresh scan</button></div></div><div class="pb" id="aiAlertsBody"></div></div>
+  <div class="panel"><div class="ph"><div><h3>Regulatory Query Assistant</h3><div class="ph-sub">Ask anything about NexaHealth platform data — responds from live regulatory context</div></div></div>
+    <div style="height:420px;display:flex;flex-direction:column;">
+      <div style="flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;" id="aiChat"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;">
+        <button class="btn btn-outline btn-icon" id="voiceBtn" onclick="toggleVoice()" title="Voice"><i class="fa-solid fa-microphone"></i></button>
+        <input class="fc" id="aiInput" type="text" placeholder="Ask about transactions, entities, recalls, compliance..." style="flex:1;border-radius:10px;padding:10px 14px;">
+        <button class="btn btn-primary btn-icon" onclick="sendAI()"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VIEW: ANALYTICS -->
+<section class="view" id="view-analytics">
+  <div class="g2">
+    <div class="panel"><div class="ph"><h3>Transaction volume — 6 months</h3></div><div class="pb"><div class="bar-chart" id="txChart"></div></div></div>
+    <div class="panel"><div class="ph"><h3>Compliance rate trend</h3></div><div class="pb"><div class="bar-chart" id="compChart"></div></div></div>
+  </div>
+  <div class="g3">
+    <div class="panel"><div class="ph"><h3>Top dispensed medicines</h3></div><div class="pb" id="topMeds"></div></div>
+    <div class="panel"><div class="ph"><h3>Recall performance</h3></div><div class="pb"><div class="dwrap"><div class="donut" id="recallDonut"></div><div id="recallLeg"></div></div></div></div>
+    <div class="panel"><div class="ph"><h3>Inspection outcomes</h3></div><div class="pb" id="inspOut"></div></div>
+  </div>
+  <div class="panel"><div class="ph"><h3>Licence renewals — next 90 days</h3></div><div class="pb" id="licChart"></div></div>
+</section>
+
+<!-- VIEW: AUDIT TRAIL -->
+<section class="view" id="view-audit">
+  <div class="panel"><div class="ph"><div><h3><i class="fa-solid fa-shield-check" style="color:var(--primary);margin-right:7px;"></i>Audit Trail</h3><div class="ph-sub">Every action recorded: user, role, timestamp, IP, device, before/after values — nothing is untraceable</div></div><div class="pact"><select class="fc" style="width:150px;padding:7px 11px;font-size:12.5px;"><option>All actions</option><option>Suspensions</option><option>Recalls</option><option>Logins</option></select><button class="btn btn-outline btn-sm" onclick="alert('Exporting audit trail...')"><i class="fa-solid fa-file-export"></i>Export</button></div></div><div id="auditBody"></div></div>
+</section>
+
+<!-- VIEW: QR -->
+<section class="view" id="view-qr">
+  <div class="g2">
+    <div class="panel"><div class="ph"><h3><i class="fa-solid fa-qrcode" style="color:var(--primary);margin-right:7px;"></i>QR / Barcode Investigation</h3><div class="ph-sub">Scan any batch barcode, QR code, or GS1 code for instant supply chain info</div></div>
+      <div class="pb"><div class="qr-zone" onclick="simScan()"><i class="fa-solid fa-qrcode" style="font-size:44px;display:block;margin-bottom:12px;"></i><div style="font-size:14px;font-weight:700;margin-bottom:5px;">Click to simulate scan</div><div style="font-size:13px;">Or use a connected barcode scanner</div></div>
+        <div style="display:flex;gap:9px;margin-top:12px;"><input id="bcInput" class="fc" type="text" placeholder="Type batch code, e.g. A2201"><button class="btn btn-primary" onclick="lookupBC()"><i class="fa-solid fa-search"></i>Lookup</button></div>
+      </div>
+    </div>
+    <div class="panel"><div class="ph"><h3>Scan result</h3></div><div class="pb" id="qrResult"><div class="empty"><i class="fa-solid fa-qrcode"></i>Scan or enter a barcode to see batch details, recall status, and supply chain trace</div></div></div>
+  </div>
+</section>
+
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+<!-- NOTIFICATION DRAWER -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="ndrawer" id="ndrawer">
+  <div class="nhead"><div><div style="font-size:15px;font-weight:700;">Notifications</div><div style="font-size:12px;color:var(--text-mut);margin-top:2px;">7 unread</div></div><button class="btn btn-ghost btn-sm" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="nbody" id="nBody"></div>
+</div>
+
+<!-- ENTITY PROFILE MODAL -->
+<div class="modal" id="epModal">
+  <div class="mbox xl">
+    <div id="epHead"></div>
+    <div class="ep-tabs" id="epTabs"></div>
+    <div id="epContent"></div>
+  </div>
+</div>
+
+<!-- FLAG / REGULATORY ACTION MODAL -->
+<div class="modal" id="flagModal">
+  <div class="mbox">
+    <div class="mhead"><h3><i class="fa-solid fa-gavel" style="color:var(--danger);margin-right:7px;"></i>Regulatory Action</h3><span class="mclose" onclick="closeModal('flagModal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="mbody">
+      <div class="fg"><label>Action type</label><select class="fc" id="flagAction"><option>Flag for investigation</option><option>Issue recall</option><option>Suspend supplier</option><option>Escalate to MCAZ board</option></select></div>
+      <div class="fg"><label>Reason</label><select class="fc" id="flagReason"><option>Suspected counterfeit</option><option>Quality failure</option><option>Unregistered batch</option><option>Expired stock in circulation</option><option>Supply diversion</option></select></div>
+      <div class="fg"><label>Notes</label><textarea class="fc" id="flagNotes" rows="3" placeholder="Details for the investigation record..."></textarea></div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('flagModal')">Cancel</button><button class="btn btn-danger" onclick="submitFlag()"><i class="fa-solid fa-gavel"></i>Submit &amp; notify MCAZ team</button></div>
+  </div>
+</div>
+
+<!-- NEW RECALL MODAL -->
+<div class="modal" id="newRecallModal">
+  <div class="mbox">
+    <div class="mhead"><h3>Issue Recall Notice</h3><span class="mclose" onclick="closeModal('newRecallModal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg"><label>Medicine / batch</label><input class="fc" id="rMed" placeholder="e.g. Amoxicillin 500mg Batch #X9901"></div>
+        <div class="fg"><label>Recall class</label><select class="fc"><option>Class I — immediate health risk</option><option>Class II — potential health risk</option><option>Class III — unlikely health risk</option></select></div>
+        <div class="fg full"><label>Reason</label><textarea class="fc" id="rReason" rows="2" placeholder="Contamination, counterfeit, quality failure..."></textarea></div>
+        <div class="fg full"><label>Action required from pharmacies</label><textarea class="fc" id="rAction" rows="2" placeholder="Cease dispensing, quarantine, return to supplier..."></textarea></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newRecallModal')">Cancel</button><button class="btn btn-danger" onclick="issueRecall()"><i class="fa-solid fa-bullhorn"></i>Issue recall to all affected entities</button></div>
+  </div>
+</div>
+
+<!-- SUSPEND MODAL -->
+<div class="modal" id="suspendModal">
+  <div class="mbox">
+    <div class="mhead"><h3>Suspend Entity</h3><span class="mclose" onclick="closeModal('suspendModal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="mbody">
+      <p style="color:var(--text-mut);font-size:13.5px;margin-bottom:14px;">Suspending <strong id="suspName"></strong> will immediately prevent all trading on NexaHealth and flag all active orders.</p>
+      <div class="fg"><label>Reason</label><textarea class="fc" id="suspReason" rows="2"></textarea></div>
+      <div class="fg"><label>Duration</label><select class="fc"><option>Indefinite (until lifted)</option><option>30 days</option><option>60 days</option><option>90 days</option></select></div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('suspendModal')">Cancel</button><button class="btn btn-danger" onclick="confirmSuspend()"><i class="fa-solid fa-ban"></i>Confirm suspension</button></div>
+  </div>
+</div>
+
+<!-- ADD ENTITY MODAL -->
+<div class="modal" id="addEntityModal">
+  <div class="mbox">
+    <div class="mhead"><h3>Register Entity</h3><span class="mclose" onclick="closeModal('addEntityModal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg"><label>Entity name</label><input class="fc" id="entName" placeholder="Company or pharmacy name"></div>
+        <div class="fg"><label>Entity type</label><select class="fc" id="entType"><option value="pharmacy">Pharmacy</option><option value="wholesaler">Wholesaler</option><option value="manufacturer">Manufacturer</option></select></div>
+        <div class="fg"><label>Licence number</label><input class="fc" id="entLic" placeholder="MCAZ-XXXX or HPA-XXXX"></div>
+        <div class="fg"><label>Licence expiry</label><input class="fc" id="entExp" type="date"></div>
+        <div class="fg full"><label>Physical address</label><input class="fc" id="entAddr" placeholder="Street, City, Province"></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('addEntityModal')">Cancel</button><button class="btn btn-primary" onclick="registerEntity()"><i class="fa-solid fa-check"></i>Register entity</button></div>
+  </div>
+</div>
+
+<!-- NEW COMPLAINT MODAL -->
+<div class="modal" id="newComplaintModal">
+  <div class="mbox">
+    <div class="mhead"><h3>Log Complaint</h3><span class="mclose" onclick="closeModal('newComplaintModal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg"><label>Complainant</label><input class="fc" placeholder="Name / pharmacy"></div>
+        <div class="fg"><label>Entity complained about</label><input class="fc"></div>
+        <div class="fg"><label>Category</label><select class="fc"><option>Product quality</option><option>Counterfeit suspicion</option><option>Pricing irregularity</option><option>Licence violation</option><option>Supply diversion</option></select></div>
+        <div class="fg"><label>Priority</label><select class="fc"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+        <div class="fg full"><label>Details</label><textarea class="fc" rows="3" placeholder="Describe the complaint..."></textarea></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newComplaintModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('newComplaintModal');alert('Complaint logged and assigned to available inspector.')"><i class="fa-solid fa-check"></i>Log complaint</button></div>
+  </div>
+</div>
+
+<!-- SCHEDULE INSPECTION MODAL -->
+<div class="modal" id="schedModal">
+  <div class="mbox">
+    <div class="mhead"><h3>Schedule Inspection</h3><span class="mclose" onclick="closeModal('schedModal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg"><label>Entity</label><select class="fc"><option>MedPharm Wholesale</option><option>ZimDrug Distributors</option><option>City Pharmacy</option><option>HealthLink Suppliers</option></select></div>
+        <div class="fg"><label>Inspector</label><select class="fc"><option>Dr. R. Ncube</option><option>Ms. T. Dube</option><option>Mr. F. Moyo</option></select></div>
+        <div class="fg"><label>Type</label><select class="fc"><option>Routine</option><option>Targeted</option><option>Follow-up</option><option>Unannounced</option></select></div>
+        <div class="fg"><label>Scheduled date</label><input class="fc" type="date"></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('schedModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('schedModal');alert('Inspection scheduled. Inspector notified via SMS and email.')"><i class="fa-solid fa-calendar-check"></i>Schedule</button></div>
+  </div>
+</div>
+
+<!-- NEW INSPECTION FORM MODAL -->
+<div class="modal" id="newInspModal">
+  <div class="mbox wide">
+    <div class="mhead"><h3>Conduct Inspection</h3><span class="mclose" onclick="closeModal('newInspModal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg"><label>Entity</label><select class="fc"><option>MedPharm Wholesale</option><option>ZimDrug Distributors</option><option>City Pharmacy</option></select></div>
+        <div class="fg"><label>Inspector</label><select class="fc"><option>Dr. R. Ncube</option><option>Ms. T. Dube</option></select></div>
+        <div class="fg"><label>Date</label><input class="fc" type="date"></div>
+        <div class="fg"><label>Overall score (0–100)</label><input class="fc" type="number" min="0" max="100" placeholder="e.g. 87"></div>
+        <div class="fg full"><label>Findings &amp; violations</label><textarea class="fc" rows="3" placeholder="Describe findings, violations, recommendations..."></textarea></div>
+        <div class="fg full"><label>Corrective actions required</label><textarea class="fc" rows="2" placeholder="List required corrective actions and deadlines..."></textarea></div>
+        <div class="fg full"><label>Photo evidence</label><input type="file" class="fc" accept="image/*" multiple></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newInspModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('newInspModal');alert('Inspection report submitted. Digital signature recorded. Entity notified.')"><i class="fa-solid fa-clipboard-check"></i>Submit report</button></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   MCAZ ENTERPRISE — Application Script
+   Mock data is structured so real API calls can replace each block.
+   Replace DATA.* with: fetch('/api/mcaz/...').then(r=>r.json())
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── DATA ───────────────────────────────────────────────────── */
+const D={
+  tx:[
+    {id:'TX-8801',time:'10:14 AM',date:'Jul 10, 2026',from:'MedPharm Wholesale',to:'City Pharmacy',med:'Amoxicillin 500mg',batch:'#A2201',qty:500,val:'$140',risk:22,s:'ok'},
+    {id:'TX-8802',time:'10:08 AM',date:'Jul 10, 2026',from:'ZimDrug Distributors',to:'Greenwood Pharmacy',med:'Paracetamol 500mg',batch:'#P1102',qty:1000,val:'$450',risk:14,s:'ok'},
+    {id:'TX-8803',time:'9:55 AM',date:'Jul 10, 2026',from:'PharmaCorp Zimbabwe',to:'Sunrise Pharmacy',med:'Amoxicillin 500mg',batch:'#X9901',qty:300,val:'$93',risk:88,s:'warn'},
+    {id:'TX-8804',time:'9:40 AM',date:'Jul 10, 2026',from:'HealthLink Suppliers',to:'Wellcare Pharmacy',med:'ORS Sachets',batch:'#O0441',qty:200,val:'$60',risk:8,s:'ok'},
+    {id:'TX-8805',time:'9:22 AM',date:'Jul 10, 2026',from:'MedPharm Wholesale',to:'City Pharmacy',med:'Cetirizine 10mg',batch:'#C0220',qty:400,val:'$76',risk:16,s:'ok'},
+    {id:'TX-8806',time:'8:58 AM',date:'Jul 10, 2026',from:'Unknown Supplier',to:'Sunrise Pharmacy',med:'Amoxicillin 500mg',batch:'UNKNOWN',qty:150,val:'$46',risk:97,s:'warn'},
+  ],
+  entities:[
+    {name:'MedPharm Wholesale',type:'wholesaler',lic:'MCAZ-1042',expiry:'Dec 2027',days:540,loc:'Workington, Harare',lat:-17.821,lng:31.049,tx:312,risk:8,rl:'low',s:'ok'},
+    {name:'ZimDrug Distributors',type:'wholesaler',lic:'MCAZ-0891',expiry:'Aug 2026',days:14,loc:'Msasa, Harare',lat:-17.849,lng:31.080,tx:280,risk:42,rl:'medium',s:'warn'},
+    {name:'PharmaCorp Zimbabwe',type:'manufacturer',lic:'MCAZ-1184',expiry:'Mar 2027',days:240,loc:'Southerton, Harare',lat:-17.862,lng:31.027,tx:198,risk:78,rl:'high',s:'suspended'},
+    {name:'HealthLink Suppliers',type:'wholesaler',lic:'MCAZ-0774',expiry:'Jun 2028',days:720,loc:'Graniteside, Harare',lat:-17.835,lng:31.055,tx:144,risk:18,rl:'low',s:'ok'},
+    {name:'City Pharmacy',type:'pharmacy',lic:'HPA-2201',expiry:'Dec 2027',days:540,loc:'Baker Ave, Harare',lat:-17.829,lng:31.034,tx:47,risk:6,rl:'low',s:'ok'},
+    {name:'Greenwood Pharmacy',type:'pharmacy',lic:'HPA-2188',expiry:'Sep 2027',days:420,loc:'Greenwood Park, Harare',lat:-17.815,lng:31.060,tx:31,risk:12,rl:'low',s:'ok'},
+    {name:'Sunrise Pharmacy',type:'pharmacy',lic:'HPA-1904',expiry:'Jan 2025',days:-180,loc:'Avenues, Harare',lat:-17.817,lng:31.041,tx:22,risk:91,rl:'critical',s:'warn'},
+    {name:'Wellcare Pharmacy',type:'pharmacy',lic:'HPA-2310',expiry:'Nov 2028',days:860,loc:'Borrowdale, Harare',lat:-17.797,lng:31.077,tx:18,risk:4,rl:'low',s:'ok'},
+    {name:'PharmaLabs Zimbabwe',type:'manufacturer',lic:'MCAZ-0520',expiry:'Mar 2028',days:600,loc:'Bulawayo',lat:-20.156,lng:28.585,tx:88,risk:24,rl:'low',s:'ok'},
+  ],
+  recalls:[
+    {id:'RC-001',batch:'#A2201',med:'Paracetamol 500mg',date:'Jul 5, 2026',reason:'Quality failure — contaminated batch',cls:'Class I',notified:14,confirmed:8,pending:6,recovered:3200,destroyed:2800,target:5000,supplier:'MedPharm Wholesale'},
+    {id:'RC-002',batch:'#X9901',med:'Amoxicillin 500mg',date:'Jul 7, 2026',reason:'Suspected counterfeit — batch not in MCAZ register',cls:'Class I',notified:9,confirmed:3,pending:6,recovered:800,destroyed:600,target:1500,supplier:'PharmaCorp Zimbabwe'},
+    {id:'RC-003',batch:'#C1101',med:'Cetirizine 10mg',date:'Jul 9, 2026',reason:'Incorrect strength labelling',cls:'Class II',notified:6,confirmed:4,pending:2,recovered:1200,destroyed:900,target:1500,supplier:'ZimDrug Distributors'},
+  ],
+  complaints:[
+    {id:'CMP-001',from:'City Pharmacy',about:'PharmaCorp Zimbabwe',cat:'Product quality',prio:'critical',s:'investigating',date:'Jul 8, 2026',insp:'Dr. R. Ncube',desc:'Received Amoxicillin batch appearing counterfeit — capsule colour inconsistency and no batch documentation'},
+    {id:'CMP-002',from:'Patient — J. Moyo',about:'Sunrise Pharmacy',cat:'Licence violation',prio:'high',s:'open',date:'Jul 9, 2026',insp:'Ms. T. Dube',desc:'Pharmacy dispensing without valid MCAZ licence'},
+    {id:'CMP-003',from:'Greenwood Pharmacy',about:'Unknown Supplier',cat:'Counterfeit suspicion',prio:'critical',s:'investigating',date:'Jul 9, 2026',insp:'Dr. R. Ncube',desc:'Received medicines without proper batch documentation; suspected counterfeit'},
+    {id:'CMP-004',from:'HealthLink Suppliers',about:'Sunrise Pharmacy',cat:'Pricing irregularity',prio:'medium',s:'open',date:'Jul 10, 2026',insp:null,desc:'Suspected parallel import above regulated price ceiling'},
+    {id:'CMP-005',from:'MCAZ field team',about:'ZimDrug Distributors',cat:'Supply diversion',prio:'high',s:'open',date:'Jul 10, 2026',insp:null,desc:'Antimalarials sold to unlicensed dealers in Midlands province'},
+  ],
+  inspections:[
+    {id:'INS-040',entity:'MedPharm Wholesale',type:'Routine',insp:'Dr. R. Ncube',date:'Jul 3, 2026',s:'completed',score:92,findings:'Minor storage temperature deviation; corrective action plan submitted.',viol:1},
+    {id:'INS-041',entity:'PharmaCorp Zimbabwe',type:'Targeted',insp:'Ms. T. Dube',date:'Jul 1, 2026',s:'completed',score:48,findings:'Batch documentation missing; counterfeit indicators present; immediate suspension recommended.',viol:6},
+    {id:'INS-042',entity:'ZimDrug Distributors',type:'Follow-up',insp:'Mr. F. Moyo',date:'Jul 6, 2026',s:'overdue',score:null,findings:null,viol:null},
+    {id:'INS-043',entity:'Sunrise Pharmacy',type:'Unannounced',insp:'Dr. R. Ncube',date:'Jul 12, 2026',s:'scheduled',score:null,findings:null,viol:null},
+    {id:'INS-044',entity:'HealthLink Suppliers',type:'Routine',insp:'Ms. T. Dube',date:'Jul 8, 2026',s:'overdue',score:null,findings:null,viol:null},
+  ],
+  aiAlerts:[
+    {type:'critical',title:'Suspected counterfeit cluster detected',body:'3 pharmacies in Bulawayo received Amoxicillin 500mg Batch #X9901 with inconsistent capsule colouring. Supplier chain traces to unlicensed distributor. Recommend immediate batch recall and PharmaCorp suspension.',conf:94,action:'Issue recall'},
+    {type:'warn',title:'Abnormal purchasing pattern — Sunrise Pharmacy',body:'Sunrise Pharmacy ordered 12× their average Amoxicillin volume over 3 days. No corresponding prescription volume increase detected. Possible diversion to unlicensed resellers.',conf:87,action:'Investigate'},
+    {type:'warn',title:'Supply diversion risk — Midlands province',body:'Antimalarial medicine tracking shows irregular outbound movements from ZimDrug Distributors toward unlicensed dealers in Gweru. 6 transactions flagged.',conf:81,action:'Flag transactions'},
+    {type:'info',title:'Licence expiry risk — ZimDrug Distributors',body:'ZimDrug Distributors MCAZ-0891 expires in 14 days. Renewal application not yet received. Automated trading restriction will apply at expiry if not renewed.',conf:99,action:'Send reminder'},
+    {type:'warn',title:'Stock manipulation suspected — MedPharm Wholesale',body:'MedPharm Wholesale reported 5,000 units of Metformin 500mg — 3× monthly average. No corresponding pharmacy order increase detected. Possible stockpiling.',conf:73,action:'Request audit'},
+    {type:'info',title:'Medicine shortage prediction — Harare province',body:'Current Amoxicillin distribution rates suggest a 40% supply gap by July 25 in Harare. 3 wholesalers flagged insufficient stock levels.',conf:88,action:'Coordinate supply'},
+    {type:'critical',title:'Suspicious transaction chain — TX-8806',body:'TX-8806 involves an unknown supplier with no MCAZ registration delivering to Sunrise Pharmacy. Transaction value inconsistent with declared quantities. Immediate investigation required.',conf:96,action:'Suspend transaction'},
+  ],
+  auditLog:[
+    {time:'10:14 AM',action:'Transaction TX-8803 auto-flagged — risk score 88/100',user:'AI System',role:'Automated',ip:'System',detail:'Batch #X9901 match — suspected counterfeit'},
+    {time:'9:45 AM',action:'Entity PharmaCorp Zimbabwe SUSPENDED',user:'Dr. R. Ncube',role:'Senior Inspector',ip:'196.22.14.8',detail:'Reason: Failed inspection INS-041; counterfeit indicators'},
+    {time:'9:30 AM',action:'Recall RC-002 issued — Amoxicillin 500mg Batch #X9901',user:'Dr. R. Ncube',role:'Senior Inspector',ip:'196.22.14.8',detail:'9 entities notified automatically'},
+    {time:'8:55 AM',action:'Login — successful',user:'Dr. R. Ncube',role:'Senior Inspector',ip:'196.22.14.8',detail:'Chrome 126 / Windows 11 — Harare, ZW'},
+    {time:'8:40 AM',action:'Complaint CMP-003 assigned to Dr. R. Ncube',user:'System',role:'Automated',ip:'System',detail:'Priority: Critical — counterfeit suspicion'},
+    {time:'Jul 9 11:22',action:'Inspection INS-041 completed — score 48/100',user:'Ms. T. Dube',role:'Inspector',ip:'196.22.15.4',detail:'PharmaCorp Zimbabwe — 6 violations found'},
+    {time:'Jul 9 9:10',action:'Licence renewal reminder sent',user:'System',role:'Automated',ip:'System',detail:'ZimDrug Distributors MCAZ-0891 — 14 days remaining'},
+  ],
+  mapRecalls:[{lat:-17.849,lng:31.080,label:'Recall RC-002 active'},{lat:-20.156,lng:28.585,label:'Recall RC-001 origin'}],
+  mapDeliveries:[{lat:-17.835,lng:31.048,label:'Delivery TX-8804 — in transit'},{lat:-17.820,lng:31.040,label:'Delivery TX-8805 — 3km away'}],
+  mapCounterfeits:[{lat:-20.160,lng:28.580,label:'Counterfeit report — Batch #X9901'},{lat:-17.862,lng:31.027,label:'Counterfeit source — PharmaCorp'}],
+};
+
+/* ── HELPERS ────────────────────────────────────────────────── */
+function rbadge(r){
+  if(r>=80)return`<span class="badge bdanger">Critical ${r}</span>`;
+  if(r>=60)return`<span class="badge" style="background:#fff3e0;color:#c2410c;">High ${r}</span>`;
+  if(r>=40)return`<span class="badge bwarn">Med ${r}</span>`;
+  return`<span class="badge bok">Low ${r}</span>`;
+}
+function sbadge(s,days){
+  if(days<0)return'<span class="badge bdanger"><i class="fa-solid fa-ban"></i>Expired</span>';
+  if(s==='suspended')return'<span class="badge bdark"><i class="fa-solid fa-ban"></i>Suspended</span>';
+  if(s==='warn')return'<span class="badge bwarn"><i class="fa-solid fa-triangle-exclamation"></i>Attention</span>';
+  return'<span class="badge bok"><i class="fa-solid fa-check"></i>Active</span>';
+}
+function rring(r,rl){return`<div class="risk-ring rl-${rl}">${r}</div>`;}
+function sc(r){return r>=80?'var(--danger)':r>=60?'#f97316':r>=40?'var(--warning)':'var(--success)';}
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+/* ── NAVIGATION ─────────────────────────────────────────────── */
+const TITLES={
+  dashboard:['National Command Centre','Real-time regulatory oversight · Zimbabwe'],
+  map:['Regulatory Operations Map','All entities, recalls, counterfeits, and live deliveries across Zimbabwe'],
+  transactions:['Transaction Audit Log','Complete record of every trade on NexaHealth'],
+  trace:['Supply Chain Trace','Interactive batch movement from manufacturer to patient'],
+  recalls:['Recall Command Centre','Active recalls, compliance tracking, and recovered quantities'],
+  complaints:['Complaint Management','Investigation workflow from submission to resolution'],
+  entities:['Entity Registry','All registered pharmacies, wholesalers, and manufacturers'],
+  licences:['Licence Monitor','Auto-tracked renewals with automatic trading restrictions'],
+  inspections:['Inspections','Schedule, conduct, and track regulatory inspections'],
+  ai:['AI Regulatory Intelligence','Proactive risk detection and automated alerts'],
+  analytics:['Analytics','Platform-wide regulatory intelligence and trends'],
+  audit:['Audit Trail','Every action: user, role, timestamp, IP, device, reason'],
+  qr:['QR / Barcode Investigation','Scan any batch code for instant supply chain trace'],
+};
+function goTo(v){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===v));
+  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+v));
+  const[t,s]=TITLES[v]||[v,''];
+  document.getElementById('pageTitle').textContent=t;
+  document.getElementById('pageSub').textContent=s;
+  document.getElementById('sidebar').classList.remove('mo');
+  const r={dashboard:renderDash,map:()=>setTimeout(initMap,60),transactions:()=>renderTx('all'),
+    recalls:renderRecalls,complaints:()=>renderComp('all'),entities:()=>renderEntities('all'),
+    licences:()=>renderLic('critical'),inspections:()=>renderInsp('all'),
+    ai:renderAI,analytics:renderAnalytics,audit:renderAudit};
+  if(r[v]) setTimeout(r[v],20);
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>goTo(n.dataset.view)));
+document.getElementById('menuToggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('mo'));
+
+/* ── DASHBOARD ──────────────────────────────────────────────── */
+function renderDash(){
+  document.getElementById('d-tx').innerHTML=D.tx.slice(0,5).map(t=>`<tr>
+    <td><strong>${t.id}</strong></td><td>${t.time}</td><td>${t.from}</td><td>${t.to}</td>
+    <td>${t.med}</td><td>${t.qty}</td><td>${rbadge(t.risk)}</td>
+    <td><span class="badge ${t.s==='ok'?'bok':'bdanger'}">${t.s==='ok'?'Cleared':'Flagged'}</span></td>
+  </tr>`).join('');
+  document.getElementById('d-ai').innerHTML=D.aiAlerts.slice(0,3).map(a=>`
+    <div class="ai-alert-item ${a.type==='warn'?'warn':a.type==='info'?'info':''}">
+      <div class="ai-head"><div class="ai-title">${a.title}</div><span class="ai-conf">${a.conf}%</span></div>
+      <div class="ai-body">${a.body.substring(0,110)}...</div>
+    </div>`).join('');
+  document.getElementById('d-alerts').innerHTML=[
+    {ico:'aico-red',icon:'ban',t:'PharmaCorp Zimbabwe — suspended',s:'Failed INS-041; counterfeit indicators — Jul 9, 2026'},
+    {ico:'aico-warn',icon:'triangle-exclamation',t:'Recall RC-001 — 6 confirmations pending',s:'14 pharmacies notified, 8 confirmed, 6 still pending'},
+    {ico:'aico-red',icon:'skull-crossbones',t:'Suspected counterfeit — Batch #X9901',s:'Flagged by 3 pharmacies — investigation open'},
+    {ico:'aico-warn',icon:'certificate',t:'ZimDrug Distributors licence — 14 days',s:'Auto-reminder sent; trading restriction pending'},
+  ].map(a=>`<div class="aitem"><div class="aico ${a.ico}"><i class="fa-solid fa-${a.icon}"></i></div><div><div class="at-title">${a.t}</div><div class="at-sub">${a.s}</div></div></div>`).join('');
+  document.getElementById('d-risk').innerHTML=D.entities.filter(e=>e.risk>40).map(e=>`<tr>
+    <td><a class="link-a" onclick="openEP('${e.name.replace(/'/g,"\\'")}')"><strong>${e.name}</strong></a></td>
+    <td><span class="badge binfo" style="text-transform:capitalize;">${e.type}</span></td>
+    <td>${rring(e.risk,e.rl)}</td>
+    <td style="font-size:12px;color:var(--text-mut);">${e.s==='suspended'?'Suspended':e.days<30?'Licence expiring':'Flagged'}</td>
+  </tr>`).join('');
+}
+setTimeout(renderDash,50);
+
+/* ── TRANSACTIONS ───────────────────────────────────────────── */
+function renderTx(f){
+  const rows=f==='all'?D.tx:f==='high'?D.tx.filter(t=>t.risk>60):D.tx.filter(t=>t.s===f);
+  document.getElementById('t-tx').innerHTML=rows.map(t=>`<tr>
+    <td><strong>${t.id}</strong></td><td>${t.date} ${t.time}</td><td>${t.from}</td><td>${t.to}</td>
+    <td>${t.med}</td><td>${t.batch}</td><td>${t.qty}</td><td>${t.val}</td>
+    <td>${rbadge(t.risk)}</td>
+    <td><span class="badge ${t.s==='ok'?'bok':'bdanger'}">${t.s==='ok'?'Cleared':'Flagged'}</span></td>
+    <td><a class="link-a" onclick="alert('Audit trail:\\n${t.id}\\n${t.from} → ${t.to}\\n${t.med} ${t.batch}\\nQty: ${t.qty} | Value: ${t.val}\\nRisk: ${t.risk}/100')">Audit</a></td>
+  </tr>`).join('');
+}
+function filterTx(btn,f){document.querySelectorAll('#view-transactions .ftab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTx(f);}
+
+/* ── TRACE ──────────────────────────────────────────────────── */
+let traceMapInst=null;
+function runTrace(){
+  const q=document.getElementById('traceInput').value.trim()||'Batch #A2201';
+  document.getElementById('traceArea').style.display='block';
+  document.getElementById('traceTitle').textContent=`Supply chain — ${q}`;
+  const nodes=[
+    {icon:'🏭',name:'PharmaLabs Zimbabwe',sub:'Manufacturer · Bulawayo',det:'Manufactured Jun 10 · 5,000 units · MCAZ-0520',flagged:false},
+    {icon:'🚛',name:'MedPharm Wholesale',sub:'Wholesaler · Harare',det:'Received Jun 14 · 5,000 units · MCAZ-1042',flagged:false},
+    {icon:'⚠️',name:'Unknown Distributor',sub:'UNREGISTERED',det:'FLAGGED: No MCAZ licence · Source of contamination',flagged:true},
+    {icon:'🏪',name:'City Pharmacy',sub:'Pharmacy · Harare',det:'Received Jul 9 · 500 units · TX-8801',flagged:false},
+    {icon:'👤',name:'Patients',sub:'End consumer',det:'~150 patients dispensed before recall',flagged:false},
+  ];
+  document.getElementById('scFlow').innerHTML=nodes.map((n,i)=>`
+    <div style="display:flex;align-items:center;">
+      <div class="sc-node ${n.flagged?'flagged':''}" onclick="this.classList.toggle('sel');this.querySelector('.sc-node-detail').classList.toggle('show');">
+        <div class="sc-node-icon">${n.icon}</div>
+        <div class="sc-node-name">${n.name}</div>
+        <div class="sc-node-sub">${n.sub}</div>
+        <div class="sc-node-detail">${n.det}</div>
+      </div>
+      ${i<nodes.length-1?`<div class="sc-arrow ${n.flagged?'pulse':''}"><i class="fa-solid fa-arrow-right"></i></div>`:''}
+    </div>`).join('');
+  if(!traceMapInst){
+    setTimeout(()=>{
+      try{
+        traceMapInst=new maplibregl.Map({container:'trace-map',style:'https://tiles.openfreemap.org/styles/liberty',center:[31.05,-17.83],zoom:11});
+        traceMapInst.addControl(new maplibregl.NavigationControl(),'top-right');
+        traceMapInst.on('load',()=>{
+          [[31.049,-17.821,'#16a34a','PharmaLabs'],[31.055,-17.835,'#0088cc','MedPharm'],[31.034,-17.829,'#7c3aed','City Pharmacy']].forEach(([lng,lat,col,lbl])=>{
+            new maplibregl.Marker({color:col}).setLngLat([lng,lat]).setPopup(new maplibregl.Popup().setHTML(`<strong>${lbl}</strong>`)).addTo(traceMapInst);
+          });
+        });
+      }catch(e){}
+    },100);
+  }
+}
+function clearTrace(){document.getElementById('traceInput').value='';document.getElementById('traceArea').style.display='none';}
+
+/* ── RECALLS ────────────────────────────────────────────────── */
+function renderRecalls(){
+  document.getElementById('recallBody').innerHTML=D.recalls.map(r=>{
+    const cp=Math.round((r.confirmed/r.notified)*100);
+    const rp=Math.round((r.recovered/r.target)*100);
+    return`<div class="recall-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:800;margin-bottom:3px;">${r.med} — ${r.batch}</div>
+          <div style="font-size:12.5px;color:var(--text-mut);">${r.cls} · Issued ${r.date} · Supplier: ${r.supplier}</div>
+          <div style="font-size:12.5px;color:var(--text-mut);margin-top:2px;">${r.reason}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="badge bdanger"><i class="fa-solid fa-triangle-exclamation"></i>Active recall</span>
+          <button class="btn btn-outline btn-sm" onclick="alert('Escalating ${r.id}...')"><i class="fa-solid fa-arrow-up"></i>Escalate</button>
+          <button class="btn btn-danger btn-sm" onclick="alert('Sending reminders to ${r.pending} pending entities for ${r.id}...')"><i class="fa-solid fa-bell"></i>Remind pending</button>
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px;"><span style="color:var(--text-mut);">Notification compliance</span><strong>${cp}%</strong></div>
+        <div class="rbar"><div class="rbar-fill" style="width:${cp}%;background:linear-gradient(90deg,var(--success),#22c55e);"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px;"><span style="color:var(--text-mut);">Stock recovery (${r.recovered.toLocaleString()} / ${r.target.toLocaleString()} units)</span><strong>${rp}%</strong></div>
+        <div class="rbar"><div class="rbar-fill" style="width:${rp}%;background:linear-gradient(90deg,var(--primary),#00b8f0);"></div></div>
+      </div>
+      <div class="rstats">
+        <div class="rstat"><div class="rstat-v">${r.notified}</div><div class="rstat-l">Notified</div></div>
+        <div class="rstat"><div class="rstat-v" style="color:var(--success);">${r.confirmed}</div><div class="rstat-l">Confirmed</div></div>
+        <div class="rstat"><div class="rstat-v" style="color:var(--danger);">${r.pending}</div><div class="rstat-l">Pending</div></div>
+        <div class="rstat"><div class="rstat-v">${r.recovered.toLocaleString()}</div><div class="rstat-l">Recovered (units)</div></div>
+      </div>
+    </div>`;}).join('');
+}
+
+/* ── COMPLAINTS ─────────────────────────────────────────────── */
+function renderComp(f){
+  const rows=f==='all'?D.complaints:D.complaints.filter(c=>c.s===f);
+  const pc={critical:'var(--danger)',high:'var(--warning)',medium:'var(--primary)',low:'var(--text-faint)'};
+  document.getElementById('compBody').innerHTML=rows.map(c=>`
+    <div class="icard" style="border-left:4px solid ${pc[c.prio]};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div><div style="font-size:13.5px;font-weight:700;margin-bottom:2px;">${c.id} — ${c.cat}</div>
+          <div style="font-size:12px;color:var(--text-mut);">From: ${c.from} · About: <strong>${c.about}</strong> · ${c.date}</div>
+          <div style="font-size:13px;margin-top:6px;">${c.desc}</div></div>
+        <div style="text-align:right;flex-shrink:0;">
+          <span class="badge ${c.s==='open'?'bdanger':c.s==='investigating'?'bwarn':'bok'}" style="display:block;margin-bottom:5px;">${c.s.charAt(0).toUpperCase()+c.s.slice(1)}</span>
+          <span class="badge" style="background:#eee;color:#555;text-transform:capitalize;">${c.prio}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+        ${c.insp?`<span style="font-size:12px;color:var(--text-mut);"><i class="fa-solid fa-user-tie" style="margin-right:4px;"></i>${c.insp}</span>`:'<span style="font-size:12px;color:var(--danger);"><i class="fa-solid fa-user-slash" style="margin-right:4px;"></i>Unassigned</span>'}
+        <a class="link-a" onclick="alert('Opening case file ${c.id}...')"><i class="fa-solid fa-folder-open"></i>Case file</a>
+        ${c.s!=='closed'?`<a class="link-a" onclick="alert('Updating ${c.id}...')"><i class="fa-solid fa-pen"></i>Update</a>`:''}
+        ${!c.insp?`<a class="link-a" onclick="alert('Assigning inspector to ${c.id}...')"><i class="fa-solid fa-user-plus"></i>Assign</a>`:''}
+      </div>
+    </div>`).join('');
+}
+function fComp(btn,f){document.querySelectorAll('#view-complaints .ftab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderComp(f);}
+renderComp('all');
+
+/* ── ENTITIES ───────────────────────────────────────────────── */
+function renderEntities(f){
+  const rows=f==='all'?D.entities:D.entities.filter(e=>e.type===f);
+  document.getElementById('entBody').innerHTML=rows.map(e=>`<tr>
+    <td><a class="link-a" onclick="openEP('${e.name.replace(/'/g,"\\'")}')"><strong>${e.name}</strong></a></td>
+    <td><span class="badge binfo" style="text-transform:capitalize;">${e.type}</span></td>
+    <td>${e.lic}</td><td>${e.expiry}</td><td>${e.loc}</td>
+    <td>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${rring(e.risk,e.rl)}
+        <div><div style="font-size:11.5px;font-weight:700;color:${sc(e.risk)};">${e.rl.toUpperCase()}</div>
+          <div class="sbar-track" style="width:66px;"><div class="sbar-fill" style="width:${e.risk}%;background:${sc(e.risk)};"></div></div>
+        </div>
+      </div>
+    </td>
+    <td>${sbadge(e.s,e.days)}</td>
+    <td style="white-space:nowrap;">
+      <a class="link-a" style="margin-right:10px;" onclick="openEP('${e.name.replace(/'/g,"\\'")}')">Profile</a>
+      ${e.s!=='suspended'?`<a class="link-d" onclick="openSusp('${e.name.replace(/'/g,"\\'")}')">Suspend</a>`:`<a class="link-a" onclick="reinstate('${e.name.replace(/'/g,"\\'")}')">Reinstate</a>`}
+    </td>
+  </tr>`).join('');
+}
+function fEntities(f){renderEntities(f);}
+renderEntities('all');
+
+/* ── LICENCES ───────────────────────────────────────────────── */
+function renderLic(f){
+  let rows=D.entities;
+  if(f==='critical')rows=rows.filter(e=>e.days<0);
+  else if(f==='7')rows=rows.filter(e=>e.days>=0&&e.days<=7);
+  else if(f==='30')rows=rows.filter(e=>e.days>7&&e.days<=30);
+  else if(f==='60')rows=rows.filter(e=>e.days>30&&e.days<=60);
+  else if(f==='90')rows=rows.filter(e=>e.days>60&&e.days<=90);
+  document.getElementById('licBody').innerHTML=rows.map(e=>{
+    const u=e.days<0?'bdanger':e.days<=30?'bwarn':'bok';
+    const lbl=e.days<0?'EXPIRED':`${e.days} days`;
+    return`<tr>
+      <td><strong>${e.name}</strong></td><td>${e.lic}</td>
+      <td style="text-transform:capitalize;">${e.type}</td><td>${e.expiry}</td>
+      <td><span class="badge ${u}">${lbl}</span></td>
+      <td>${sbadge(e.s,e.days)}</td>
+      <td><a class="link-a" style="margin-right:10px;" onclick="alert('Sending renewal reminder to ${e.name}...')"><i class="fa-solid fa-bell"></i>Remind</a>${e.days<0?`<a class="link-d" onclick="openSusp('${e.name.replace(/'/g,"\\'")}')">Restrict</a>`:''}</td>
+    </tr>`;}).join('');
+}
+function fLic(btn,f){document.querySelectorAll('#view-licences .ftab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderLic(f);}
+renderLic('critical');
+
+/* ── INSPECTIONS ────────────────────────────────────────────── */
+function renderInsp(f){
+  const rows=f==='all'?D.inspections:D.inspections.filter(i=>i.s===f);
+  document.getElementById('inspStats').innerHTML=[
+    {l:'Total this month',v:12,ico:'clipboard-list',cl:'blue'},
+    {l:'Completed',v:8,ico:'clipboard-check',cl:'green'},
+    {l:'Overdue',v:2,ico:'calendar-xmark',cl:'red'},
+  ].map(s=>`<div class="sc"><div class="sc-ico ${s.cl}"><i class="fa-solid fa-${s.ico}"></i></div><div class="sc-val">${s.v}</div><div class="sc-lbl">${s.l}</div></div>`).join('');
+  document.getElementById('inspBody').innerHTML=rows.map(i=>`
+    <div class="icard">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div style="flex:1;">
+          <div style="font-size:13.5px;font-weight:700;margin-bottom:2px;">${i.id} — ${i.entity}</div>
+          <div style="font-size:12px;color:var(--text-mut);">${i.type} · Inspector: ${i.insp} · ${i.date}</div>
+          ${i.findings?`<div style="font-size:13px;margin-top:6px;">${i.findings}</div>`:''}
+          ${i.viol!==null?`<div style="font-size:12px;color:var(--danger);margin-top:4px;"><i class="fa-solid fa-triangle-exclamation"></i>${i.viol} violation${i.viol!==1?'s':''} found</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;padding-left:14px;">
+          ${i.score!==null?`<div style="font-size:28px;font-weight:800;color:${sc(100-i.score)};">${i.score}</div><div style="font-size:11px;color:var(--text-mut);">/ 100</div>`:`<span class="badge ${i.s==='overdue'?'bdanger':'bwarn'}">${i.s}</span>`}
+        </div>
+      </div>
+      <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap;">
+        <span class="badge ${i.s==='completed'?'bok':i.s==='overdue'?'bdanger':'binfo'}">${i.s}</span>
+        ${i.s==='completed'?`<a class="link-a" onclick="alert('Downloading report ${i.id}...')"><i class="fa-solid fa-file-pdf"></i>Report</a>`:''}
+        ${i.s==='overdue'?`<a class="link-a" onclick="alert('Sending overdue notice for ${i.id}...')"><i class="fa-solid fa-bell"></i>Send notice</a>`:''}
+        ${i.s==='scheduled'?`<a class="link-a" onclick="openModal('newInspModal')"><i class="fa-solid fa-clipboard-list"></i>Conduct now</a>`:''}
+      </div>
+    </div>`).join('');
+}
+function fInsp(btn,f){document.querySelectorAll('#view-inspections .ftab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderInsp(f);}
+renderInsp('all');
+
+/* ── AI INTELLIGENCE ────────────────────────────────────────── */
+function renderAI(){
+  const tmap={critical:{cls:'',icon:'skull-crossbones',col:'var(--danger)'},warn:{cls:'warn',icon:'triangle-exclamation',col:'var(--warning)'},info:{cls:'info',icon:'circle-info',col:'var(--primary)'}};
+  document.getElementById('aiAlertsBody').innerHTML=D.aiAlerts.map(a=>{
+    const m=tmap[a.type]||tmap.info;
+    return`<div class="ai-alert-item ${m.cls}" style="margin-bottom:11px;">
+      <div class="ai-head"><div class="ai-title"><i class="fa-solid fa-${m.icon}" style="color:${m.col};margin-right:7px;"></i>${a.title}</div><span class="ai-conf" style="background:${m.col}20;color:${m.col};">${a.conf}% confidence</span></div>
+      <div class="ai-body" style="margin:7px 0;">${a.body}</div>
+      <div class="ai-actions">
+        <button class="btn btn-sm" style="background:${m.col};color:#fff;" onclick="alert('Taking action: ${a.action}...')"><i class="fa-solid fa-bolt"></i>${a.action}</button>
+        <button class="btn btn-outline btn-sm" onclick="alert('Alert dismissed and logged in audit trail.')">Dismiss</button>
+        <button class="btn btn-outline btn-sm" onclick="alert('Assigning to available inspector...')"><i class="fa-solid fa-user-plus"></i>Assign</button>
+      </div>
+    </div>`;}).join('');
+  if(!document.getElementById('aiChat').children.length){
+    appendMsg('ai','Good day, Dr. Ncube. I have detected <strong>7 regulatory alerts</strong> requiring your attention. The most critical is a suspected counterfeit cluster of Amoxicillin 500mg Batch #X9901 in Bulawayo — 3 pharmacies reported quality anomalies. I recommend immediate batch recall and PharmaCorp Zimbabwe suspension. Shall I draft the recall notice?');
+  }
+}
+
+/* ── AI CHAT ────────────────────────────────────────────────── */
+function appendMsg(role,text){
+  const b=document.getElementById('aiChat');
+  const isUser=role==='user';
+  b.insertAdjacentHTML('beforeend',`<div style="max-width:80%;padding:11px 15px;border-radius:14px;font-size:13.5px;line-height:1.5;align-self:${isUser?'flex-end':'flex-start'};background:${isUser?'var(--primary)':'var(--primary-light)'};color:${isUser?'#fff':'var(--primary-dark)'};">${text}</div>`);
+  b.scrollTop=9999;
+}
+const REG_CTX={tx:1284,recalls:D.recalls.length,suspended:D.entities.filter(e=>e.s==='suspended').map(e=>e.name),high_risk:D.entities.filter(e=>e.risk>60).map(e=>({name:e.name,risk:e.risk})),ai_alerts:D.aiAlerts,complaints:D.complaints,inspections:D.inspections};
+const AI_SYS=`You are the MCAZ Regulatory Intelligence Assistant for NexaHealth Zimbabwe. Assist senior MCAZ inspectors with: transaction surveillance, entity compliance, recall tracking, counterfeit detection, supply chain tracing, inspection management, complaint investigation, and regulatory analytics. Respond professionally and precisely. Decline off-topic queries in one sentence. Use the context. Never invent data.
+CONTEXT: ${JSON.stringify(REG_CTX)}`;
+async function sendAI(){
+  const inp=document.getElementById('aiInput');
+  const q=inp.value.trim();if(!q)return;
+  appendMsg('user',q);inp.value='';
+  appendMsg('ai','<em>Analysing regulatory data...</em>');
+  const node=document.getElementById('aiChat').lastElementChild;
+  try{
+    if(window.puter&&puter.ai&&puter.ai.chat){
+      const r=await puter.ai.chat([{role:'system',content:AI_SYS},{role:'user',content:q}]);
+      node.innerHTML=(r?.message?.content||r?.toString?.()||'Unable to process.');
+    }else{node.innerHTML='AI backend not yet connected.';}
+  }catch(e){node.innerHTML='Unable to reach AI service. Please try again.';}
+}
+document.getElementById('aiInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendAI();});
+let vRec=null,vRec_on=false;
+function toggleVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Voice input requires Chrome or Edge.');return;}
+  const btn=document.getElementById('voiceBtn');
+  if(vRec_on){vRec?.stop();return;}
+  vRec=new SR();vRec.lang='en-US';
+  vRec.onstart=()=>{vRec_on=true;btn.style.background='var(--danger)';btn.style.color='#fff';};
+  vRec.onend=()=>{vRec_on=false;btn.style.background='';btn.style.color='';};
+  vRec.onresult=e=>{document.getElementById('aiInput').value=e.results[0][0].transcript;sendAI();};
+  vRec.start();
+}
+
+/* ── ANALYTICS ──────────────────────────────────────────────── */
+function renderAnalytics(){
+  const m=[['Feb',920],['Mar',1100],['Apr',1040],['May',1280],['Jun',1190],['Jul',1284]];
+  const mx=Math.max(...m.map(x=>x[1]));
+  document.getElementById('txChart').innerHTML=m.map(([l,v])=>`<div class="bc"><div class="bc-bar bc-bar-blue" style="height:${(v/mx)*100}%"></div><div class="bc-lbl">${l}</div></div>`).join('');
+  const c=[['Feb',89],['Mar',90],['Apr',92],['May',93],['Jun',93],['Jul',94]];
+  document.getElementById('compChart').innerHTML=c.map(([l,v])=>`<div class="bc"><div class="bc-bar bc-bar-green" style="height:${v}%"></div><div class="bc-lbl">${l}</div></div>`).join('');
+  const top=[{n:'Amoxicillin 500mg',u:8420},{n:'Paracetamol 500mg',u:6200},{n:'ORS Sachets',u:4100},{n:'Cetirizine 10mg',u:3800},{n:'Metformin 500mg',u:2900}];
+  document.getElementById('topMeds').innerHTML=top.map(t=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>${t.n}</span><strong>${t.u.toLocaleString()} units</strong></div>`).join('');
+  const dd=[{l:'Completed',v:65,c:'#16a34a'},{l:'Pending',v:25,c:'#f59e0b'},{l:'Failed',v:10,c:'#dc2626'}];
+  let acc=0;const grad=dd.map(d=>{const s=acc;acc+=d.v;return`${d.c} ${s}% ${acc}%`;}).join(',');
+  document.getElementById('recallDonut').style.background=`conic-gradient(${grad})`;
+  document.getElementById('recallLeg').innerHTML=dd.map(d=>`<div class="litem"><span class="ldot" style="background:${d.c}"></span>${d.l} — ${d.v}%</div>`).join('');
+  document.getElementById('inspOut').innerHTML=[{l:'Pass (>80)',v:'67%',c:'var(--success)'},{l:'Marginal (60-80)',v:'21%',c:'var(--warning)'},{l:'Fail (<60)',v:'12%',c:'var(--danger)'}].map(o=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);"><span>${o.l}</span><strong style="color:${o.c};">${o.v}</strong></div>`).join('');
+  document.getElementById('licChart').innerHTML=`<div style="display:flex;gap:14px;flex-wrap:wrap;">${[{l:'Expired',n:1,c:'var(--danger)'},{l:'7 days',n:0,c:'var(--danger)'},{l:'30 days',n:1,c:'var(--warning)'},{l:'60 days',n:0,c:'var(--warning)'},{l:'90 days',n:2,c:'var(--primary)'}].map(r=>`<div class="sc" style="flex:1;min-width:130px;"><div class="sc-val" style="color:${r.c};font-size:22px;">${r.n}</div><div class="sc-lbl">${r.l}</div></div>`).join('')}</div>`;
+}
+
+/* ── AUDIT ──────────────────────────────────────────────────── */
+function renderAudit(){
+  document.getElementById('auditBody').innerHTML=D.auditLog.map(a=>`
+    <div class="audit-row">
+      <div class="atime">${a.time}</div>
+      <div style="flex:1;"><div class="aaction">${a.action}</div><div class="adetail">${a.detail}</div></div>
+      <div class="auser"><i class="fa-solid fa-user" style="margin-right:5px;color:var(--text-faint);"></i>${a.user}<div style="font-size:11px;color:var(--text-faint);">${a.role}</div></div>
+      <div style="font-size:11px;color:var(--text-faint);white-space:nowrap;">${a.ip}</div>
+    </div>`).join('');
+}
+
+/* ── QR SCANNER ─────────────────────────────────────────────── */
+function simScan(){document.getElementById('bcInput').value='A2201';lookupBC();}
+function lookupBC(){
+  const code=document.getElementById('bcInput').value.trim();
+  if(!code){alert('Enter a barcode or batch code.');return;}
+  document.getElementById('qrResult').innerHTML=`
+    <div class="qr-result">
+      <div style="font-size:15px;font-weight:800;margin-bottom:12px;">Batch #${code} — Amoxicillin 500mg</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:3px;">Manufacturer</div><div>PharmaLabs Zimbabwe</div></div>
+        <div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:3px;">Distributor</div><div>MedPharm Wholesale</div></div>
+        <div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:3px;">Expiry date</div><div>Mar 2027</div></div>
+        <div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:3px;">Recall status</div><div><span class="badge bdanger"><i class="fa-solid fa-triangle-exclamation"></i>Active recall RC-001</span></div></div>
+        <div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:3px;">Counterfeit alert</div><div><span class="badge bdanger">Suspected — 3 reports</span></div></div>
+        <div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:3px;">Last inspection</div><div>Jul 3, 2026 — Score 92/100</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('traceInput').value='Batch #${code}';goTo('trace');runTrace();"><i class="fa-solid fa-route"></i>Full trace</button>
+        <button class="btn btn-danger btn-sm" onclick="openModal('flagModal')"><i class="fa-solid fa-flag"></i>Regulatory action</button>
+      </div>
+    </div>`;
+}
+
+/* ── ENTITY PROFILE ─────────────────────────────────────────── */
+function openEP(name){
+  const e=D.entities.find(x=>x.name===name)||D.entities[0];
+  document.getElementById('epHead').innerHTML=`
+    <div class="ep-head">
+      <div class="ep-av">${name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}</div>
+      <div style="flex:1;">
+        <div class="ep-name">${e.name}</div>
+        <div class="ep-meta">${e.type.charAt(0).toUpperCase()+e.type.slice(1)} · ${e.loc} · ${e.lic}</div>
+        <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;">${sbadge(e.s,e.days)}<span class="badge binfo">${e.tx} transactions</span></div>
+      </div>
+      <div style="text-align:center;flex-shrink:0;">
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px;">Risk Score</div>
+        <div style="font-size:32px;font-weight:800;color:#fff;">${e.risk}</div>
+        <div style="font-size:12px;font-weight:700;color:${e.risk<40?'#22c55e':e.risk<60?'#fbbf24':e.risk<80?'#fb923c':'#f87171'};">${e.rl.toUpperCase()} RISK</div>
+      </div>
+      <span class="ep-close" onclick="closeModal('epModal')"><i class="fa-solid fa-xmark"></i></span>
+    </div>`;
+  const tabs=['Overview','Licences','Transactions','Inspections','Recalls','Complaints','Timeline'];
+  document.getElementById('epTabs').innerHTML=tabs.map((t,i)=>`<div class="ep-tab ${i===0?'active':''}" onclick="switchEPTab(this,'${t.toLowerCase()}')">${t}</div>`).join('');
+  switchEPTab(document.querySelector('.ep-tab'),'overview');
+  openModal('epModal');
+}
+function switchEPTab(el,tab){
+  document.querySelectorAll('.ep-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  const cont={
+    overview:`<div style="padding:20px;"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;"><div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Licence</div><div style="font-weight:700;">MCAZ-1042</div></div><div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Expiry</div><div style="font-weight:700;">Dec 2027</div></div><div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Location</div><div style="font-weight:700;">Workington, Harare</div></div><div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Total transactions</div><div style="font-weight:700;">312</div></div><div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Open complaints</div><div style="font-weight:700;">0</div></div><div><div style="font-size:11px;color:var(--text-mut);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Inspections</div><div style="font-weight:700;">2 (last: 92/100)</div></div></div></div>`,
+    licences:`<div class="tw" style="padding:20px;"><table class="dt"><thead><tr><th>Licence</th><th>Type</th><th>Issued</th><th>Expiry</th><th>Status</th></tr></thead><tbody><tr><td>MCAZ-1042</td><td>MCAZ wholesaler</td><td>Jan 2020</td><td>Dec 2027</td><td><span class="badge bok">Valid</span></td></tr></tbody></table></div>`,
+    transactions:`<div class="tw" style="padding:20px;"><table class="dt"><thead><tr><th>Tx ID</th><th>Medicine</th><th>Qty</th><th>Value</th><th>Status</th></tr></thead><tbody>${D.tx.slice(0,4).map(t=>`<tr><td>${t.id}</td><td>${t.med}</td><td>${t.qty}</td><td>${t.val}</td><td><span class="badge ${t.s==='ok'?'bok':'bdanger'}">${t.s==='ok'?'Clear':'Flagged'}</span></td></tr>`).join('')}</tbody></table></div>`,
+    inspections:`<div style="padding:20px;">${D.inspections.slice(0,2).map(i=>`<div class="icard"><div style="font-weight:700;">${i.id} — ${i.type}</div><div style="font-size:12px;color:var(--text-mut);">${i.date} · ${i.insp}</div>${i.score!==null?`<div style="font-size:22px;font-weight:800;color:${sc(100-i.score)};margin-top:8px;">${i.score}/100</div>`:''}</div>`).join('')}</div>`,
+    recalls:`<div style="padding:20px;">${D.recalls.slice(0,2).map(r=>`<div class="icard"><div style="font-weight:700;">${r.med} ${r.batch}</div><div style="font-size:12px;color:var(--text-mut);">${r.reason}</div></div>`).join('')}</div>`,
+    complaints:`<div style="padding:20px;">${D.complaints.slice(0,2).map(c=>`<div class="icard"><div style="font-weight:700;">${c.id} — ${c.cat}</div><div style="font-size:12px;color:var(--text-mut);">${c.desc}</div></div>`).join('')}</div>`,
+    timeline:`<div style="padding:20px;">${D.auditLog.slice(0,5).map(a=>`<div class="audit-row"><div class="atime">${a.time}</div><div class="aaction">${a.action}</div></div>`).join('')}</div>`,
+  };
+  document.getElementById('epContent').innerHTML=cont[tab]||`<div class="empty" style="padding:30px;"><i class="fa-solid fa-folder-open"></i>No ${tab} data available</div>`;
+}
+
+/* ── SUSPEND / REGISTER / ACTIONS ───────────────────────────── */
+let _suspName='';
+function openSusp(name){_suspName=name;document.getElementById('suspName').textContent=name;openModal('suspendModal');}
+function confirmSuspend(){
+  const e=D.entities.find(x=>x.name===_suspName);if(e)e.s='suspended';
+  D.auditLog.unshift({time:'Just now',action:`Entity ${_suspName} SUSPENDED`,user:'Dr. R. Ncube',role:'Senior Inspector',ip:'196.22.14.8',detail:document.getElementById('suspReason').value||'Regulatory violation'});
+  renderEntities('all');renderLic('all');closeModal('suspendModal');
+  alert(`${_suspName} has been suspended and can no longer trade on NexaHealth.`);
+}
+function reinstate(name){
+  const e=D.entities.find(x=>x.name===name);if(e)e.s='ok';
+  renderEntities('all');alert(`${name} has been reinstated.`);
+}
+function submitFlag(){
+  const action=document.getElementById('flagAction').value;
+  D.auditLog.unshift({time:'Just now',action:`Regulatory action: ${action}`,user:'Dr. R. Ncube',role:'Senior Inspector',ip:'196.22.14.8',detail:document.getElementById('flagNotes').value||'No notes'});
+  closeModal('flagModal');alert(`Regulatory action submitted. MCAZ team notified. Audit record created.`);
+}
+function registerEntity(){
+  const name=document.getElementById('entName').value.trim();
+  if(!name){alert('Entity name is required.');return;}
+  D.entities.push({name,type:document.getElementById('entType').value,lic:document.getElementById('entLic').value,expiry:document.getElementById('entExp').value,days:365,loc:document.getElementById('entAddr').value,lat:-17.83,lng:31.05,tx:0,risk:10,rl:'low',s:'ok'});
+  renderEntities('all');closeModal('addEntityModal');
+}
+function issueRecall(){
+  const med=document.getElementById('rMed').value.trim();if(!med){alert('Medicine/batch required.');return;}
+  D.recalls.unshift({id:`RC-00${D.recalls.length+1}`,batch:'NEW',med,date:'Today',reason:document.getElementById('rReason').value,cls:'Class I',notified:0,confirmed:0,pending:0,recovered:0,destroyed:0,target:1000,supplier:'TBD'});
+  closeModal('newRecallModal');renderRecalls();
+  alert(`Recall issued for "${med}". All affected entities notified automatically.`);
+}
+
+/* ── NOTIFICATION DRAWER ────────────────────────────────────── */
+function toggleDrawer(){document.getElementById('ndrawer').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
+function closeDrawer(){document.getElementById('ndrawer').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+document.getElementById('nBody').innerHTML=[
+  {ico:'aico-red',icon:'skull-crossbones',t:'CRITICAL: Counterfeit batch confirmed',s:'Batch #X9901 — immediate recall required',time:'2 min ago',p:'critical'},
+  {ico:'aico-red',icon:'triangle-exclamation',t:'Recall RC-001 — 6 pharmacies pending',s:'14 notified, 8 confirmed',time:'15 min ago',p:'critical'},
+  {ico:'aico-warn',icon:'certificate',t:'ZimDrug licence expiring in 14 days',s:'MCAZ-0891 — auto-restriction pending',time:'1 hr ago',p:'high'},
+  {ico:'aico-warn',icon:'circle-exclamation',t:'New complaint CMP-005 assigned',s:'Supply diversion — Midlands province',time:'2 hr ago',p:'high'},
+  {ico:'aico-info',icon:'clipboard-check',t:'Inspection INS-042 overdue',s:'ZimDrug Distributors — 3 days overdue',time:'3 hr ago',p:'medium'},
+  {ico:'aico-info',icon:'brain',t:'AI: Abnormal purchasing pattern',s:'Sunrise Pharmacy — 12× average volume',time:'4 hr ago',p:'medium'},
+  {ico:'aico-green',icon:'check-circle',t:'Inspection INS-040 completed',s:'MedPharm Wholesale — score 92/100',time:'Yesterday',p:'low'},
+].map(n=>`<div class="aitem"><div class="pdot pdot-${n.p}"></div><div class="aico ${n.ico}"><i class="fa-solid fa-${n.icon}"></i></div><div><div class="at-title">${n.t}</div><div class="at-sub">${n.s}</div></div><div class="at-time">${n.time}</div></div>`).join('');
+
+/* ── MAP ────────────────────────────────────────────────────── */
+let mapInst=null;
+const layers={};
+function initMap(){
+  if(mapInst)return;
+  try{
+    mapInst=new maplibregl.Map({container:'reg-map',style:'https://tiles.openfreemap.org/styles/liberty',center:[29.8,-19.5],zoom:6});
+    mapInst.addControl(new maplibregl.NavigationControl(),'top-right');
+    mapInst.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
+    mapInst.on('load',()=>{
+      D.entities.forEach(e=>{
+        const col=e.type==='pharmacy'?'#0088cc':e.type==='wholesaler'?'#16a34a':'#7c3aed';
+        const el=document.createElement('div');
+        el.style.cssText=`width:13px;height:13px;border-radius:50%;background:${col};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;`;
+        const lyr=e.type==='pharmacy'?'pharmacy':e.type==='wholesaler'?'wholesale':'manufacturer';
+        el.dataset.layer=lyr;
+        const m=new maplibregl.Marker({element:el}).setLngLat([e.lng,e.lat]).addTo(mapInst);
+        el.addEventListener('click',()=>showMapInfo(e));
+        if(!layers[lyr])layers[lyr]=[];layers[lyr].push({m,el});
+      });
+      D.mapRecalls.forEach(r=>{
+        const el=document.createElement('div');el.innerHTML='⚠️';el.style.cssText='font-size:17px;cursor:pointer;';
+        el.dataset.layer='recall';
+        const m=new maplibregl.Marker({element:el}).setLngLat([r.lng,r.lat]).setPopup(new maplibregl.Popup().setHTML(`<strong>${r.label}</strong>`)).addTo(mapInst);
+        if(!layers.recall)layers.recall=[];layers.recall.push({m,el});
+      });
+      D.mapCounterfeits.forEach(c=>{
+        const el=document.createElement('div');el.innerHTML='☠️';el.style.cssText='font-size:17px;cursor:pointer;';
+        el.dataset.layer='counterfeit';
+        const m=new maplibregl.Marker({element:el}).setLngLat([c.lng,c.lat]).setPopup(new maplibregl.Popup().setHTML(`<strong>${c.label}</strong>`)).addTo(mapInst);
+        if(!layers.counterfeit)layers.counterfeit=[];layers.counterfeit.push({m,el});
+      });
+      D.mapDeliveries.forEach(d=>{
+        const el=document.createElement('div');el.innerHTML='🚚';el.style.cssText='font-size:19px;cursor:pointer;';
+        el.dataset.layer='delivery';
+        const m=new maplibregl.Marker({element:el}).setLngLat([d.lng,d.lat]).setPopup(new maplibregl.Popup().setHTML(`<strong>${d.label}</strong>`)).addTo(mapInst);
+        if(!layers.delivery)layers.delivery=[];layers.delivery.push({m,el});
+        setInterval(()=>m.setLngLat([d.lng+(Math.random()-.5)*.005,d.lat+(Math.random()-.5)*.005]),3500);
+      });
+    });
+  }catch(err){console.warn('Map init:',err);}
+}
+function toggleLayer(l){
+  const vis=document.getElementById('ml-'+l)?.checked;
+  (layers[l]||[]).forEach(({el})=>el.style.display=vis?'':'none');
+}
+function filterMap(){if(mapInst)mapInst.flyTo({center:[31.05,-17.83],zoom:10,speed:1.4});}
+function resetMap(){
+  document.getElementById('mapProv').value='all';
+  Object.keys(layers).forEach(l=>{(layers[l]||[]).forEach(({el})=>el.style.display='');const cb=document.getElementById('ml-'+l);if(cb)cb.checked=true;});
+  if(mapInst)mapInst.flyTo({center:[29.8,-19.5],zoom:6});
+}
+function showMapInfo(e){
+  document.getElementById('mapInfoContent').innerHTML=`
+    <div style="font-size:14px;font-weight:800;margin-bottom:7px;padding-right:18px;">${e.name}</div>
+    <div style="font-size:12px;color:var(--text-mut);margin-bottom:9px;text-transform:capitalize;">${e.type} · ${e.loc}</div>
+    <div style="margin-bottom:8px;">${rbadge(e.risk)} ${sbadge(e.s,e.days)}</div>
+    <div style="font-size:12px;margin-bottom:6px;"><strong>Licence:</strong> ${e.lic} · ${e.expiry}</div>
+    <div style="font-size:12px;margin-bottom:10px;"><strong>Transactions:</strong> ${e.tx}</div>
+    <div style="display:flex;gap:7px;"><button class="btn btn-primary btn-sm" onclick="openEP('${e.name.replace(/'/g,"\\'")}')">Full profile</button><button class="btn btn-outline btn-sm" onclick="document.getElementById('traceInput').value='${e.name}';goTo('trace');runTrace();">Trace</button></div>`;
+  document.getElementById('mapInfo').classList.add('show');
+}
+
+/* ── LIVE TX COUNTER ────────────────────────────────────────── */
+let txN=1284;
+setInterval(()=>{txN+=Math.floor(Math.random()*3+1);const el=document.getElementById('kpi-tx');if(el)el.textContent=txN.toLocaleString();},8000);
+</script>
+</body>
+</html>
