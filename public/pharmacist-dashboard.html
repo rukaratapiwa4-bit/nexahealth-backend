@@ -1049,10 +1049,105 @@ tbody tr:hover{background:#fafcfe;}
 
 <script>
 /* =========================================================================
+   NEXAHEALTH REAL API CLIENT
+   Connects to your live backend. MOCK_ORDERS and APPLICATIONS below are
+   now populated from real data on page load via loadRealData() at the
+   bottom of this script. MOCK_SUPPLIERS / CATALOGUE_ITEMS remain mock
+   until wholesalers add real products via their dashboard — wiring
+   those now would just show empty results.
+   ========================================================================= */
+
+const API_BASE = window.location.origin + '/api';
+
+function getAuthToken(){ return localStorage.getItem('nexa_token'); }
+function getCurrentUser(){ try{ return JSON.parse(localStorage.getItem('nexa_user')||'{}'); }catch{ return {}; } }
+
+async function apiRequest(path, options = {}) {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  if (res.status === 401) {
+    localStorage.removeItem('nexa_token');
+    localStorage.removeItem('nexa_user');
+    window.location.href = '/';
+    return null;
+  }
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) { console.error(`API error [${path}]:`, data.message || res.statusText); throw new Error(data.message || 'Request failed.'); }
+  return data;
+}
+
+async function fetchMyOrders(){ const d = await apiRequest('/orders'); return d?.orders || []; }
+async function confirmOrderReceiptReal(orderId){ return apiRequest(`/orders/${orderId}/confirm-receipt`, {method:'PATCH'}); }
+async function fetchMyApplicationsReal(){ const d = await apiRequest('/applications/mine'); return d?.applications || []; }
+
+/* Map a real backend Order document to the exact shape orderRow() expects */
+function mapRealOrderToUiShape(o){
+  const itemsText = (o.items||[]).map(it=>`${it.name} ×${it.quantity}`).join(', ');
+  const statusMap = { pending:'pending', confirmed:'confirmed', preparing:'confirmed', dispatched:'transit', delivered:'delivered', cancelled:'pending', rejected:'pending' };
+  return {
+    id: o.orderNumber,
+    _realId: o._id,
+    supplier: o.wholesaler?.businessName || o.wholesaler?.fullName || 'Wholesaler',
+    items: itemsText || '—',
+    total: '$' + Number(o.total||0).toFixed(2),
+    status: statusMap[o.status] || 'pending',
+    date: new Date(o.createdAt).toLocaleDateString(),
+    hasDelivery: o.deliveryOption !== 'pickup',
+  };
+}
+
+/* Map a real backend Application document to the exact shape the Applications view expects */
+function mapRealApplicationToUiShape(a){
+  return {
+    name: a.wholesaler?.businessName || a.wholesaler?.fullName || 'Wholesaler',
+    date: new Date(a.createdAt).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}),
+    status: a.status === 'approved' ? 'approved' : a.status === 'rejected' ? 'declined' : 'pending',
+  };
+}
+
+/* Loads real Orders + Applications from the backend and replaces the
+   contents of the existing MOCK_ORDERS / APPLICATIONS arrays in place
+   (mutating, not reassigning, since they're declared with const) so
+   every existing render function below keeps working unchanged. */
+async function loadRealData(){
+  try {
+    const [realOrders, realApplications] = await Promise.all([
+      fetchMyOrders().catch(()=>[]),
+      fetchMyApplicationsReal().catch(()=>[]),
+    ]);
+
+    if (realOrders.length) {
+      MOCK_ORDERS.length = 0;
+      realOrders.forEach(o => MOCK_ORDERS.push(mapRealOrderToUiShape(o)));
+    }
+    if (realApplications.length) {
+      APPLICATIONS.length = 0;
+      realApplications.forEach(a => APPLICATIONS.push(mapRealApplicationToUiShape(a)));
+    }
+
+    // Re-render whatever is currently on screen with the real data now loaded
+    document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
+    document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+    if (typeof renderApplications === 'function') renderApplications('all');
+  } catch (err) {
+    console.error('Failed to load real data, dashboard is showing mock data as fallback:', err.message);
+  }
+}
+</script>
+<script>
+/* =========================================================================
    MOCK DATA LAYER
    Everything below is placeholder data standing in for real API calls.
-   Replace each block with a fetch()/your backend call that returns the
-   same shape, and the UI will keep working unchanged.
+   MOCK_ORDERS and APPLICATIONS get overwritten by loadRealData() above
+   once the page loads and the real API responds. MOCK_SUPPLIERS and
+   CATALOGUE_ITEMS remain mock until wholesalers add real stock.
    ========================================================================= */
 
 const MOCK_ORDERS = [
@@ -1202,6 +1297,18 @@ function orderRow(o, withAction){
 }
 document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
 document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+
+/* ---- auth guard + load real data on page start ---- */
+(function authGuard(){
+  if (!getAuthToken()) {
+    window.location.href = '/';
+    return;
+  }
+  const user = getCurrentUser();
+  const nameEl = document.querySelector('.sidebar-foot .who, .user-name, [data-user-name]');
+  if (nameEl && user.fullName) nameEl.textContent = user.fullName;
+})();
+loadRealData();
 
 /* ---- navigation ---- */
 const titles = {
@@ -1604,8 +1711,20 @@ function markOrderDelivered(){
   document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
 }
 
-function confirmReceipt(){
+async function confirmReceipt(){
   if(!lastOrder){ alert('Delivery confirmed as received.'); return; }
+
+  // If this is a real backend order (has _realId from loadRealData), confirm it server-side
+  const stored = MOCK_ORDERS.find(o=>o.id===lastOrder.id);
+  if (stored && stored._realId) {
+    try {
+      await confirmOrderReceiptReal(stored._realId);
+    } catch (err) {
+      alert('Could not confirm receipt with the server: ' + err.message);
+      return;
+    }
+  }
+
   markOrderDelivered();
   if(lastOrder.paymentStatus==='pay_on_delivery'){
     alert('Delivery confirmed as received. Choose a payment method now to settle this order.');
