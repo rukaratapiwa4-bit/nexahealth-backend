@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexaHealth — Pharmacist Dashboard</title>
+
+<!-- Fonts & Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- Mapbox GL JS -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+
+<!-- Puter.js (in-browser auth + AI, no server-side API key required) -->
+<script src="https://js.puter.com/v2/"></script>
+
+<style>
+/* ============ DESIGN TOKENS ============ */
+:root{
+  --primary:#0088cc;
+  --primary-dark:#0b2b44;
+  --primary-light:#e6f4fb;
+  --primary-soft:#d6ecf9;
+  --success:#16a34a;
+  --success-bg:#e8f8ee;
+  --warning:#f59e0b;
+  --warning-bg:#fef6e7;
+  --danger:#dc2626;
+  --danger-bg:#fdecec;
+  --bg:#f4f7fa;
+  --surface:#ffffff;
+  --border:#e3e9ef;
+  --text:#152238;
+  --text-mut:#64748b;
+  --text-faint:#94a3b8;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 1px 2px rgba(11,43,68,.04), 0 4px 16px rgba(11,43,68,.06);
+  --shadow-lg:0 8px 30px rgba(11,43,68,.12);
+  --sidebar-w:252px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  font-size:14.5px;
+  -webkit-font-smoothing:antialiased;
+}
+a{text-decoration:none; color:inherit;}
+button{font-family:inherit; cursor:pointer; border:none; background:none;}
+ul{list-style:none;}
+::-webkit-scrollbar{width:8px; height:8px;}
+::-webkit-scrollbar-thumb{background:#cbd8e2; border-radius:8px;}
+
+/* ============ LAYOUT ============ */
+.app{display:flex; min-height:100vh;}
+
+/* ---- SIDEBAR ---- */
+.sidebar{
+  width:var(--sidebar-w);
+  background:var(--primary-dark);
+  color:#cfe3f0;
+  position:fixed; top:0; left:0; bottom:0;
+  display:flex; flex-direction:column;
+  z-index:100;
+  transition:transform .25s ease;
+}
+.sidebar-brand{
+  display:flex; align-items:center; gap:10px;
+  padding:22px 20px; border-bottom:1px solid rgba(255,255,255,.08);
+}
+.sidebar-brand .logo-mark{
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg,var(--primary),#00b8f0);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; color:#fff; font-size:15px; flex-shrink:0;
+}
+.sidebar-brand .name{font-weight:700; color:#fff; font-size:16.5px; line-height:1.1;}
+.sidebar-brand .role{font-size:11px; color:#7fa8c2; text-transform:uppercase; letter-spacing:.05em;}
+
+.sidebar-nav{flex:1; overflow-y:auto; padding:16px 12px;}
+.sidebar-nav .group-label{
+  font-size:10.5px; text-transform:uppercase; letter-spacing:.08em;
+  color:#5f88a3; padding:14px 12px 6px;
+}
+.nav-item{
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px; border-radius:10px; margin-bottom:2px;
+  color:#c3dbe9; font-weight:500; font-size:14px;
+  position:relative; transition:background .15s, color .15s;
+}
+.nav-item i{width:18px; text-align:center; font-size:15px; color:#7fa8c2;}
+.nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+.nav-item.active{background:var(--primary); color:#fff;}
+.nav-item.active i{color:#fff;}
+.nav-item .badge-dot{
+  margin-left:auto; background:var(--danger); color:#fff; font-size:10.5px;
+  font-weight:700; padding:1px 6px; border-radius:20px; min-width:18px; text-align:center;
+}
+
+.sidebar-foot{
+  padding:14px 20px; border-top:1px solid rgba(255,255,255,.08);
+  display:flex; align-items:center; gap:10px;
+}
+.avatar-sm{
+  width:34px; height:34px; border-radius:50%; background:var(--primary);
+  display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:13px; flex-shrink:0;
+}
+.sidebar-foot .who{font-size:13px; color:#fff; font-weight:600; line-height:1.2;}
+.sidebar-foot .sub{font-size:11.5px; color:#7fa8c2;}
+.sidebar-foot .logout{margin-left:auto; color:#7fa8c2; font-size:15px;}
+.sidebar-foot .logout:hover{color:#fff;}
+
+/* ---- MAIN ---- */
+.main{margin-left:var(--sidebar-w); flex:1; min-width:0; display:flex; flex-direction:column;}
+
+.topbar{
+  height:68px; background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:16px; padding:0 26px;
+  position:sticky; top:0; z-index:50;
+}
+.menu-toggle{display:none; font-size:18px; color:var(--text-mut);}
+.page-title{font-size:18px; font-weight:700; color:var(--primary-dark);}
+.page-sub{font-size:12.5px; color:var(--text-mut); margin-top:1px;}
+.topbar-search{
+  flex:1; max-width:420px; margin-left:12px;
+  display:flex; align-items:center; gap:10px;
+  background:var(--bg); border:1px solid var(--border); border-radius:10px;
+  padding:9px 14px; color:var(--text-faint);
+}
+.topbar-search input{flex:1; border:none; background:none; outline:none; font-size:13.5px; color:var(--text);}
+.topbar-actions{display:flex; align-items:center; gap:8px; margin-left:auto;}
+.icon-btn{
+  width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  color:var(--text-mut); font-size:16px; position:relative; transition:background .15s;
+}
+.icon-btn:hover{background:var(--bg);}
+.icon-btn .dot{
+  position:absolute; top:7px; right:8px; width:8px; height:8px; border-radius:50%;
+  background:var(--danger); border:2px solid var(--surface);
+}
+.topbar-profile{display:flex; align-items:center; gap:10px; padding-left:12px; border-left:1px solid var(--border);}
+.topbar-profile .name{font-size:13.5px; font-weight:600;}
+.topbar-profile .pharmacy{font-size:11.5px; color:var(--text-mut);}
+
+.content{padding:26px; flex:1;}
+.view{display:none;}
+.view.active{display:block; animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+/* ============ REUSABLE COMPONENTS ============ */
+.stats-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:24px;}
+.stat-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; box-shadow:var(--shadow);
+}
+.stat-card .top{display:flex; justify-content:space-between; align-items:flex-start;}
+.stat-card .icon-wrap{
+  width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px;
+}
+.stat-card .icon-wrap.blue{background:var(--primary-light); color:var(--primary);}
+.stat-card .icon-wrap.amber{background:var(--warning-bg); color:var(--warning);}
+.stat-card .icon-wrap.green{background:var(--success-bg); color:var(--success);}
+.stat-card .icon-wrap.navy{background:#eef2f8; color:var(--primary-dark);}
+.stat-card .value{font-size:26px; font-weight:800; margin-top:14px; color:var(--primary-dark);}
+.stat-card .label{font-size:12.5px; color:var(--text-mut); margin-top:2px;}
+.stat-card .trend{font-size:11.5px; font-weight:600; margin-top:10px; display:flex; align-items:center; gap:4px;}
+.trend.up{color:var(--success);} .trend.down{color:var(--danger);} .trend.flat{color:var(--text-faint);}
+
+.panel{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); margin-bottom:22px; overflow:hidden;
+}
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 22px; border-bottom:1px solid var(--border);
+}
+.panel-head h3{font-size:15px; font-weight:700; color:var(--primary-dark);}
+.panel-head .sub{font-size:12px; color:var(--text-mut); margin-top:2px; font-weight:400;}
+.panel-body{padding:22px;}
+.link-action{color:var(--primary); font-size:12.5px; font-weight:600;}
+.link-action:hover{text-decoration:underline;}
+
+.two-col{display:grid; grid-template-columns:1.6fr 1fr; gap:22px;}
+
+/* alert list */
+.alert-row{display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--border);}
+.alert-row:last-child{border-bottom:none;}
+.alert-ico{
+  width:34px; height:34px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px;
+}
+.alert-ico.warn{background:var(--warning-bg); color:var(--warning);}
+.alert-ico.info{background:var(--primary-light); color:var(--primary);}
+.alert-ico.danger{background:var(--danger-bg); color:var(--danger);}
+.alert-text .t1{font-size:13.5px; font-weight:600;}
+.alert-text .t2{font-size:12px; color:var(--text-mut); margin-top:1px;}
+
+/* table */
+table{width:100%; border-collapse:collapse;}
+thead th{
+  text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em;
+  color:var(--text-mut); padding:0 22px 12px; font-weight:600;
+}
+tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px;}
+tbody tr:hover{background:#fafcfe;}
+.badge{display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11.5px; font-weight:700;}
+.badge.pending{background:var(--warning-bg); color:#b57a05;}
+.badge.confirmed{background:var(--primary-light); color:var(--primary);}
+.badge.transit{background:#eef0fd; color:#4c53d6;}
+.badge.delivered{background:var(--success-bg); color:var(--success);}
+.badge.low{background:var(--danger-bg); color:var(--danger);}
+.badge.ok{background:var(--success-bg); color:var(--success);}
+
+.btn{padding:9px 16px; border-radius:9px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:7px;}
+.btn-primary{background:var(--primary); color:#fff;}
+.btn-primary:hover{background:#0077b3;}
+.btn-outline{background:#fff; border:1px solid var(--border); color:var(--text);}
+.btn-outline:hover{border-color:var(--primary); color:var(--primary);}
+.btn-sm{padding:6px 12px; font-size:12px;}
+.btn-block{width:100%; justify-content:center;}
+
+/* quick actions */
+.quick-actions{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+.qa-card{
+  border:1px solid var(--border); border-radius:12px; padding:16px; text-align:left;
+  transition:border-color .15s, transform .15s; background:#fff;
+}
+.qa-card:hover{border-color:var(--primary); transform:translateY(-2px);}
+.qa-card i{font-size:18px; color:var(--primary); margin-bottom:10px; display:block;}
+.qa-card .t{font-size:13px; font-weight:600;}
+.qa-card .s{font-size:11.5px; color:var(--text-mut); margin-top:2px;}
+
+/* ============ SEARCH & ORDER ============ */
+.search-hero{
+  background:linear-gradient(135deg,var(--primary-dark),#123c5c);
+  border-radius:var(--radius); padding:26px; margin-bottom:22px; color:#fff;
+}
+.search-hero h2{font-size:19px; font-weight:700; margin-bottom:4px;}
+.search-hero p{font-size:13px; color:#bcdcee; margin-bottom:16px;}
+.search-box-big{
+  display:flex; align-items:center; gap:10px; background:#fff; border-radius:11px; padding:13px 18px;
+}
+.search-box-big input{flex:1; border:none; outline:none; font-size:14.5px;}
+.search-box-big i{color:var(--text-faint);}
+.chips{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+.chip{background:rgba(255,255,255,.12); color:#e5f3fb; font-size:12px; padding:6px 12px; border-radius:20px;}
+.chip:hover{background:rgba(255,255,255,.2);}
+
+.result-medname{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.result-medname h3{font-size:15.5px; font-weight:700;}
+.result-medname .count{font-size:12px; color:var(--text-mut);}
+
+.supplier-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:26px;}
+.supplier-card{
+  border:1.5px solid var(--border); border-radius:12px; padding:18px; position:relative; background:#fff;
+  transition:border-color .15s;
+}
+.supplier-card.best{border-color:var(--success);}
+.supplier-card.best::before{
+  content:"BEST VALUE"; position:absolute; top:-10px; left:14px; background:var(--success); color:#fff;
+  font-size:10px; font-weight:800; letter-spacing:.04em; padding:3px 9px; border-radius:20px;
+}
+.supplier-card .sname{font-size:14px; font-weight:700; margin-bottom:2px;}
+.supplier-card .sloc{font-size:11.5px; color:var(--text-mut); margin-bottom:12px;}
+.supplier-card .price{font-size:22px; font-weight:800; color:var(--primary-dark);}
+.supplier-card .price span{font-size:12px; font-weight:500; color:var(--text-mut);}
+.supplier-card .meta{display:flex; justify-content:space-between; font-size:12px; color:var(--text-mut); margin:12px 0 14px; border-top:1px dashed var(--border); padding-top:12px;}
+.supplier-card .meta div strong{display:block; color:var(--text); font-size:13px;}
+.supplier-card .was-price{font-size:12px; color:var(--text-faint); text-decoration:line-through; margin-top:2px;}
+.delivery-badge{
+  display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; padding:8px 10px;
+  border-radius:8px; margin-bottom:14px;
+}
+.delivery-badge.free{background:var(--success-bg); color:var(--success);}
+.delivery-badge.paid{background:var(--primary-light); color:var(--primary);}
+.delivery-badge.none{background:var(--warning-bg); color:#b57a05;}
+.supplier-card-actions{display:flex; gap:8px;}
+
+/* ---- Modals (product / payment / call) ---- */
+.modal-overlay{position:fixed; inset:0; background:rgba(11,43,68,.4); z-index:400; display:none; align-items:center; justify-content:center; padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff; border-radius:var(--radius); width:100%; max-width:440px; max-height:88vh; overflow-y:auto; box-shadow:var(--shadow-lg);}
+.modal-box.wide{max-width:520px;}
+.modal-head{padding:18px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;}
+.modal-head h3{font-size:15px; font-weight:700;}
+.modal-head i{cursor:pointer; color:var(--text-mut);}
+.modal-body{padding:22px;}
+.pay-option, .call-option{
+  display:flex; align-items:center; gap:14px; padding:14px 16px; border:1.5px solid var(--border); border-radius:11px;
+  margin-bottom:10px; transition:border-color .15s, background .15s; width:100%; text-align:left;
+}
+.pay-option:hover, .call-option:hover{border-color:var(--primary); background:var(--primary-light);}
+.pay-option i, .call-option i{font-size:18px; color:var(--primary); width:22px; text-align:center;}
+.pay-option .po-name{font-size:13.5px; font-weight:700;}
+.pay-option .po-desc{font-size:11.5px; color:var(--text-mut);}
+.pay-option-choice{display:flex; gap:12px; margin-bottom:6px;}
+.pay-choice-card{
+  flex:1; border:1.5px solid var(--border); border-radius:12px; padding:18px; text-align:center; transition:border-color .15s;
+}
+.pay-choice-card:hover{border-color:var(--primary);}
+.pay-choice-card i{font-size:22px; color:var(--primary); margin-bottom:8px; display:block;}
+.pay-choice-card .t{font-size:13.5px; font-weight:700;}
+.pay-choice-card .s{font-size:11.5px; color:var(--text-mut); margin-top:3px;}
+.product-hero{background:var(--bg); border-radius:12px; height:150px; display:flex; align-items:center; justify-content:center; color:var(--text-faint); font-size:34px; margin-bottom:16px;}
+.product-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); font-size:13.5px;}
+.product-row:last-child{border-bottom:none;}
+.product-row .k{color:var(--text-mut);}
+.invoice-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid var(--primary-dark);}
+.invoice-head .logo-mark{width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,var(--primary),#00b8f0); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:14px; margin-bottom:6px;}
+.invoice-head h4{font-size:16px; font-weight:800; color:var(--primary-dark);}
+.invoice-head .inv-meta{text-align:right; font-size:12px; color:var(--text-mut);}
+.invoice-table{width:100%; margin-bottom:16px;}
+.invoice-table th{text-align:left; font-size:11px; text-transform:uppercase; color:var(--text-mut); padding-bottom:8px; border-bottom:1px solid var(--border);}
+.invoice-table td{padding:9px 0; font-size:13px; border-bottom:1px solid var(--border);}
+.invoice-totals{margin-left:auto; max-width:220px;}
+.invoice-totals .row{display:flex; justify-content:space-between; font-size:13px; padding:5px 0;}
+.invoice-totals .row.grand{font-weight:800; font-size:15px; color:var(--primary-dark); border-top:1px solid var(--border); margin-top:4px; padding-top:9px;}
+.invoice-status{display:inline-block; margin-top:16px;}
+
+/* ---- filter tabs ---- */
+.filter-tabs{display:flex; gap:8px; padding:16px 22px 0; flex-wrap:wrap;}
+.filter-tab{padding:8px 16px; border-radius:20px; font-size:12.5px; font-weight:600; background:var(--bg); color:var(--text-mut); border:1px solid var(--border);}
+.filter-tab.active{background:var(--primary); color:#fff; border-color:var(--primary);}
+.filter-tab:hover:not(.active){border-color:var(--primary); color:var(--primary);}
+
+/* ---- application cards ---- */
+.app-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+.app-card{border:1.5px solid var(--border); border-radius:12px; padding:18px;}
+.app-card h4{font-size:14px; font-weight:700; margin-bottom:2px;}
+.app-card .adate{font-size:11.5px; color:var(--text-mut); margin-bottom:10px;}
+.app-card .aactions{margin-top:12px; display:flex; gap:14px; font-size:12.5px;}
+.app-card .aactions a{color:var(--primary); font-weight:600;}
+.app-card .aactions a.danger{color:var(--danger);}
+
+/* ---- settings ---- */
+.settings-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+.settings-card{border:1px solid var(--border); border-radius:12px; padding:20px;}
+.settings-card h4{font-size:14.5px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px;}
+.settings-card .info-row{font-size:13px; color:var(--text-mut); margin-bottom:6px;}
+.settings-card .info-row strong{color:var(--text); font-weight:600;}
+.check-row{display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:13.5px;}
+.check-row input{width:16px; height:16px; accent-color:var(--primary);}
+.role-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;}
+.role-row:last-of-type{border-bottom:none;}
+.role-row .rname{font-weight:600;}
+.role-row .rtag{font-size:11px; color:var(--text-mut); background:var(--bg); padding:2px 9px; border-radius:20px;}
+
+/* ---- selectable payment methods ---- */
+.pm-select-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px;}
+.pm-select-card{border:1.5px solid var(--border); border-radius:12px; padding:16px; cursor:pointer; transition:border-color .15s;}
+.pm-select-card.selected{border-color:var(--primary); background:var(--primary-light);}
+.pm-select-card i{font-size:18px; color:var(--primary); margin-bottom:8px; display:block;}
+.pm-select-card .pmt{font-size:13.5px; font-weight:700;}
+.pm-select-card .pms{font-size:11.5px; color:var(--text-mut);}
+.pm-select-card .pmdefault{display:inline-block; margin-top:6px; font-size:10px; font-weight:700; color:var(--primary); background:var(--primary-soft); padding:2px 8px; border-radius:20px;}
+
+/* ---- searchable + scrollable combo select ---- */
+.combo-select{position:relative; width:200px;}
+.combo-select input{width:100%; border:1px solid var(--border); border-radius:9px; padding:8px 30px 8px 12px; font-size:12.5px; outline:none;}
+.combo-select input:focus{border-color:var(--primary);}
+.combo-arrow{position:absolute; right:11px; top:50%; transform:translateY(-50%); font-size:11px; color:var(--text-faint); pointer-events:none;}
+.combo-list{position:absolute; top:calc(100% + 6px); left:0; right:0; background:#fff; border:1px solid var(--border); border-radius:10px; max-height:220px; overflow-y:auto; box-shadow:var(--shadow-lg); display:none; z-index:60;}
+.combo-list.show{display:block;}
+.combo-item{padding:9px 14px; font-size:12.5px; cursor:pointer;}
+.combo-item:hover{background:var(--primary-light);}
+
+/* cart drawer */
+.cart-fab{
+  position:fixed; bottom:26px; right:26px; background:var(--primary); color:#fff;
+  width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  box-shadow:var(--shadow-lg); font-size:19px; z-index:200;
+}
+.cart-fab .count{
+  position:absolute; top:-4px; right:-4px; background:var(--danger); color:#fff; font-size:11px; font-weight:800;
+  width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+}
+.drawer-overlay{position:fixed; inset:0; background:rgba(11,43,68,.35); z-index:300; display:none;}
+.drawer-overlay.show{display:block;}
+.drawer{
+  position:fixed; top:0; right:0; bottom:0; width:400px; background:#fff; z-index:301;
+  transform:translateX(100%); transition:transform .25s ease; display:flex; flex-direction:column;
+}
+.drawer.show{transform:translateX(0);}
+.drawer-head{padding:20px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;}
+.drawer-body{flex:1; overflow-y:auto; padding:18px 22px;}
+.drawer-foot{padding:18px 22px; border-top:1px solid var(--border);}
+.cart-item{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); align-items:center;}
+.cart-item .ci-name{font-size:13.5px; font-weight:600;}
+.cart-item .ci-sup{font-size:11.5px; color:var(--text-mut);}
+.qty-ctrl{display:flex; align-items:center; border:1px solid var(--border); border-radius:8px; margin-left:auto;}
+.qty-ctrl button{width:26px; height:26px; font-size:14px; color:var(--primary); flex-shrink:0;}
+.qty-ctrl input{width:44px; text-align:center; font-size:13px; border:none; border-left:1px solid var(--border); border-right:1px solid var(--border); outline:none; font-family:inherit; -moz-appearance:textfield;}
+.qty-ctrl input::-webkit-outer-spin-button, .qty-ctrl input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+.cart-total-row{display:flex; justify-content:space-between; font-size:14px; margin-bottom:12px;}
+.cart-total-row.grand{font-weight:800; font-size:16px; color:var(--primary-dark);}
+
+/* ============ DELIVERY TRACKING ============ */
+#map{width:100%; height:420px; border-radius:var(--radius); border:1px solid var(--border);}
+.tracker-steps{display:flex; justify-content:space-between; margin:22px 0 6px; position:relative;}
+.tracker-steps::before{content:""; position:absolute; top:15px; left:5%; right:5%; height:3px; background:var(--border); z-index:0;}
+.t-step{flex:1; text-align:center; position:relative; z-index:1;}
+.t-step .circ{
+  width:32px; height:32px; border-radius:50%; background:#fff; border:3px solid var(--border); margin:0 auto 8px;
+  display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--text-faint);
+}
+.t-step.done .circ{background:var(--primary); border-color:var(--primary); color:#fff;}
+.t-step.active .circ{background:#fff; border-color:var(--primary); color:var(--primary);}
+.t-step .lbl{font-size:12px; font-weight:600; color:var(--text-mut);}
+.t-step.done .lbl, .t-step.active .lbl{color:var(--text);}
+
+/* ============ CHAT (rooms + AI) shared ============ */
+.chat-shell{display:grid; grid-template-columns:280px 1fr; height:560px;}
+.chat-list{border-right:1px solid var(--border); overflow-y:auto;}
+.chat-list-item{padding:14px 18px; border-bottom:1px solid var(--border); cursor:pointer;}
+.chat-list-item.active{background:var(--primary-light);}
+.chat-list-item .cn{font-size:13.5px; font-weight:600;}
+.chat-list-item .cm{font-size:12px; color:var(--text-mut); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.chat-main{display:flex; flex-direction:column;}
+.chat-head{padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;}
+.chat-head .t{font-size:13.5px; font-weight:700;}
+.chat-head .s{font-size:11.5px; color:var(--text-mut);}
+.chat-body{flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px;}
+.msg{max-width:70%; padding:10px 14px; border-radius:14px; font-size:13.5px; line-height:1.45;}
+.msg.in{background:var(--bg); border-bottom-left-radius:4px; align-self:flex-start;}
+.msg.out{background:var(--primary); color:#fff; border-bottom-right-radius:4px; align-self:flex-end;}
+.msg.ai{background:var(--primary-light); border-bottom-left-radius:4px; align-self:flex-start; color:var(--primary-dark);}
+.msg .meta{font-size:10px; opacity:.65; margin-top:5px;}
+.chat-input{padding:14px 18px; border-top:1px solid var(--border); display:flex; gap:10px;}
+.chat-input input{flex:1; border:1px solid var(--border); border-radius:10px; padding:11px 14px; outline:none; font-size:13.5px;}
+.chat-input button{width:42px; height:42px; background:var(--primary); color:#fff; border-radius:10px;}
+
+/* ---- larger AI-specific chat ---- */
+.ai-shell{height:640px;}
+.ai-shell .chat-body{padding:26px;}
+.ai-shell .msg{font-size:14.5px; max-width:78%;}
+.ai-input{padding:18px 22px; gap:12px;}
+.ai-input input{padding:15px 18px; font-size:15px; border-radius:12px;}
+.ai-input button{width:48px; height:48px; border-radius:12px; font-size:16px;}
+.voice-btn{background:var(--bg); color:var(--primary); border:1px solid var(--border);}
+.voice-btn.recording{background:var(--danger); color:#fff; border-color:var(--danger); animation:pulseRec 1s infinite;}
+@keyframes pulseRec{0%{box-shadow:0 0 0 0 rgba(220,38,38,.4);} 70%{box-shadow:0 0 0 10px rgba(220,38,38,0);} 100%{box-shadow:0 0 0 0 rgba(220,38,38,0);}}
+.ai-scope-note{
+  background:var(--primary-light); color:var(--primary-dark); font-size:11.5px; padding:9px 14px;
+  display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--border);
+}
+
+/* ============ ANALYTICS ============ */
+.bars{display:flex; align-items:flex-end; gap:16px; height:200px; padding-top:10px;}
+.bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px;}
+.bar-col .bar{width:100%; max-width:38px; background:linear-gradient(180deg,var(--primary),#00b8f0); border-radius:6px 6px 0 0;}
+.bar-col .bl{font-size:11px; color:var(--text-mut);}
+.supplier-perf-row{display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+.supplier-perf-row .sp-name{width:130px; font-size:13px; font-weight:600; flex-shrink:0;}
+.sp-bar-bg{flex:1; height:10px; background:var(--bg); border-radius:20px; overflow:hidden;}
+.sp-bar-fill{height:100%; border-radius:20px;}
+.sp-pct{width:40px; text-align:right; font-size:12.5px; font-weight:700; color:var(--text-mut);}
+
+.donut-wrap{display:flex; align-items:center; gap:26px;}
+.donut{width:150px; height:150px; border-radius:50%; flex-shrink:0;}
+.legend-item{display:flex; align-items:center; gap:8px; font-size:12.5px; margin-bottom:9px;}
+.legend-dot{width:10px; height:10px; border-radius:3px;}
+
+/* responsive */
+@media(max-width:1180px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .two-col{grid-template-columns:1fr;}
+  .supplier-cards{grid-template-columns:repeat(2,1fr);}
+  .quick-actions{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .menu-toggle{display:block;}
+  .topbar-search{display:none;}
+  .stats-grid{grid-template-columns:1fr;}
+  .supplier-cards{grid-template-columns:1fr;}
+  .chat-shell{grid-template-columns:1fr;}
+  .chat-list{display:none;}
+  .drawer{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-mark">N</div>
+      <div>
+        <div class="name">NexaHealth</div>
+        <div class="role">Pharmacist Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="group-label">Overview</div>
+      <a class="nav-item active" data-view="dashboard"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+
+      <div class="group-label">Procurement</div>
+      <a class="nav-item" data-view="search"><i class="fa-solid fa-magnifying-glass"></i> Search &amp; Order</a>
+      <a class="nav-item" data-view="catalogue"><i class="fa-solid fa-book-medical"></i> Product Catalogue</a>
+      <a class="nav-item" data-view="procurement"><i class="fa-solid fa-robot"></i> Smart Procurement</a>
+      <a class="nav-item" data-view="orders"><i class="fa-solid fa-receipt"></i> My Orders <span class="badge-dot">3</span></a>
+      <a class="nav-item" data-view="tracking"><i class="fa-solid fa-truck-fast"></i> Delivery Tracking</a>
+
+      <div class="group-label">Accounts</div>
+      <a class="nav-item" data-view="applications"><i class="fa-solid fa-file-signature"></i> Applications <span class="badge-dot">2</span></a>
+      <a class="nav-item" data-view="invoices"><i class="fa-solid fa-file-invoice"></i> Invoices <span class="badge-dot">2</span></a>
+
+      <div class="group-label">Collaboration</div>
+      <a class="nav-item" data-view="chatroom"><i class="fa-solid fa-people-group"></i> Pharmacy Chat Room</a>
+      <a class="nav-item" data-view="supplierchat"><i class="fa-solid fa-comment-dots"></i> Supplier Chat</a>
+      <a class="nav-item" data-view="assistant"><i class="fa-solid fa-sparkles"></i> AI Assistant</a>
+
+      <div class="group-label">Insights</div>
+      <a class="nav-item" data-view="analytics"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+      <a class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="avatar-sm">TM</div>
+      <div>
+        <div class="who">Tendai Moyo</div>
+        <div class="sub">City Pharmacy · Harare</div>
+      </div>
+      <i class="fa-solid fa-right-from-bracket logout" title="Log out"></i>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <i class="fa-solid fa-bars menu-toggle" id="menuToggle"></i>
+      <div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="page-sub" id="pageSub">Welcome back, here's what's happening today</div>
+      </div>
+      <div class="topbar-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Quick search medicines, orders, suppliers...">
+      </div>
+      <div class="topbar-actions">
+        <div class="icon-btn"><i class="fa-regular fa-bell"></i><span class="dot"></span></div>
+        <div class="icon-btn"><i class="fa-regular fa-envelope"></i></div>
+        <div class="topbar-profile">
+          <div class="avatar-sm">TM</div>
+          <div>
+            <div class="name">Tendai Moyo</div>
+            <div class="pharmacy">City Pharmacy</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ============ VIEW: DASHBOARD ============ -->
+      <section class="view active" id="view-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="top"><div class="icon-wrap amber"><i class="fa-solid fa-triangle-exclamation"></i></div></div>
+            <div class="value">7</div>
+            <div class="label">Low stock items</div>
+            <div class="trend down"><i class="fa-solid fa-arrow-down"></i> 2 more than last week</div>
+          </div>
+          <div class="stat-card">
+            <div class="top"><div class="icon-wrap blue"><i class="fa-solid fa-box"></i></div></div>
+            <div class="value">12</div>
+            <div class="label">Pending orders</div>
+            <div class="trend flat"><i class="fa-solid fa-minus"></i> Same as yesterday</div>
+          </div>
+          <div class="stat-card">
+            <div class="top"><div class="icon-wrap green"><i class="fa-solid fa-sack-dollar"></i></div></div>
+            <div class="value">$4,280</div>
+            <div class="label">Spend this month</div>
+            <div class="trend up"><i class="fa-solid fa-arrow-up"></i> 8% vs last month</div>
+          </div>
+          <div class="stat-card">
+            <div class="top"><div class="icon-wrap navy"><i class="fa-solid fa-industry"></i></div></div>
+            <div class="value">18</div>
+            <div class="label">Active suppliers</div>
+            <div class="trend up"><i class="fa-solid fa-arrow-up"></i> 3 new this month</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Quick actions</h3></div>
+          <div class="panel-body">
+            <div class="quick-actions">
+              <button class="qa-card" onclick="goTo('search')"><i class="fa-solid fa-magnifying-glass"></i><div class="t">Search a medicine</div><div class="s">Compare suppliers instantly</div></button>
+              <button class="qa-card" onclick="goTo('chatroom')"><i class="fa-solid fa-comments"></i><div class="t">Ask other pharmacies</div><div class="s">Post an urgent request</div></button>
+              <button class="qa-card" onclick="goTo('orders')"><i class="fa-solid fa-receipt"></i><div class="t">Review pending orders</div><div class="s">12 awaiting confirmation</div></button>
+              <button class="qa-card" onclick="goTo('assistant')"><i class="fa-solid fa-sparkles"></i><div class="t">Ask the AI Assistant</div><div class="s">Stock &amp; ordering questions</div></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>Live alerts</h3><div class="sub">Auto-generated from your inventory &amp; supplier feeds</div></div>
+              <a class="link-action">View all</a>
+            </div>
+            <div class="panel-body">
+              <div class="alert-row">
+                <div class="alert-ico warn"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="alert-text"><div class="t1">You're running low on Amoxicillin 500mg</div><div class="t2">12 units left · predicted stockout in 4 days</div></div>
+              </div>
+              <div class="alert-row">
+                <div class="alert-ico info"><i class="fa-solid fa-tag"></i></div>
+                <div class="alert-text"><div class="t1">3 suppliers updated prices today</div><div class="t2">Paracetamol, Cetirizine, ORS sachets</div></div>
+              </div>
+              <div class="alert-row">
+                <div class="alert-ico danger"><i class="fa-solid fa-ban"></i></div>
+                <div class="alert-text"><div class="t1">Product recall notice</div><div class="t2">MedPharm Wholesale recalled Batch #A2201 — check your stock</div></div>
+              </div>
+              <div class="alert-row">
+                <div class="alert-ico info"><i class="fa-solid fa-truck"></i></div>
+                <div class="alert-text"><div class="t1">Order #ORD-1042 is 5km away</div><div class="t2">Estimated arrival in 12 minutes</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>Stock-out predictions</h3><div class="sub">ML forecast from your sales rate</div></div>
+            </div>
+            <div class="panel-body" style="padding-top:8px;">
+              <div class="alert-row" style="padding-top:0;">
+                <div class="alert-text" style="width:100%;">
+                  <div class="t1">Amoxicillin 500mg</div>
+                  <div class="t2">Runs out in <strong style="color:var(--danger)">4 days</strong> at current usage</div>
+                </div>
+              </div>
+              <div class="alert-row">
+                <div class="alert-text" style="width:100%;">
+                  <div class="t1">ORS Sachets</div>
+                  <div class="t2">Runs out in <strong style="color:var(--warning)">9 days</strong></div>
+                </div>
+              </div>
+              <div class="alert-row">
+                <div class="alert-text" style="width:100%;">
+                  <div class="t1">Atorvastatin 20mg</div>
+                  <div class="t2">Runs out in <strong style="color:var(--warning)">11 days</strong></div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="goTo('search')">Reorder now</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Recent orders</h3><a class="link-action" onclick="goTo('orders')">View all</a></div>
+          <table>
+            <thead><tr><th>Order ID</th><th>Supplier</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="recentOrdersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: SEARCH & ORDER ============ -->
+      <section class="view" id="view-search">
+        <div class="search-hero">
+          <h2>Find a medicine, compare every supplier in real time</h2>
+          <p>Prices, stock levels and delivery estimates update live from every registered wholesaler.</p>
+          <div class="search-box-big">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="medSearchInput" type="text" placeholder="e.g. Paracetamol 500mg" value="Paracetamol 500mg">
+            <button class="btn btn-primary" onclick="runSearch()">Search</button>
+          </div>
+          <div class="chips">
+            <span class="chip">Paracetamol 500mg</span><span class="chip">Amoxicillin 500mg</span>
+            <span class="chip">Atorvastatin 20mg</span><span class="chip">Cetirizine 10mg</span>
+          </div>
+        </div>
+
+        <div class="result-medname">
+          <h3 id="resultTitle">Paracetamol 500mg — 3 suppliers in stock</h3>
+          <span class="count">Sorted by price</span>
+        </div>
+        <div class="supplier-cards" id="supplierResults"></div>
+      </section>
+
+      <!-- ============ VIEW: PRODUCT CATALOGUE ============ -->
+      <section class="view" id="view-catalogue">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>Product Catalogue</h3><div class="sub">Full stock list across every registered supplier, with batch &amp; expiry info</div></div>
+            <div style="display:flex; gap:10px;">
+              <div class="combo-select" id="supplierCombo">
+                <input id="catSupplierFilter" type="text" placeholder="All Suppliers" value="All Suppliers" autocomplete="off" onfocus="openSupplierCombo()" oninput="filterSupplierCombo()">
+                <i class="fa-solid fa-chevron-down combo-arrow"></i>
+                <div class="combo-list" id="supplierComboList"></div>
+              </div>
+              <button class="btn btn-outline btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Batch #</th><th>Product</th><th>Generic Name</th><th>Pack Size</th><th>Price (USD)</th><th>Expiry Date</th><th>Supplier</th><th></th></tr></thead>
+            <tbody id="catalogueBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: SMART PROCUREMENT ============ -->
+      <section class="view" id="view-procurement">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3><i class="fa-solid fa-robot" style="color:var(--primary); margin-right:6px;"></i>Smart Procurement Center</h3><div class="sub">ML-ranked reorder suggestions based on your usage rate and live supplier prices</div></div>
+          </div>
+          <table>
+            <thead><tr><th>Medicine</th><th>Current Stock</th><th>Days Left</th><th>Best Supplier</th><th>Best Price</th><th>Delivery Time</th><th>Action</th></tr></thead>
+            <tbody id="procurementBody"></tbody>
+          </table>
+          <div class="panel-body" style="display:flex; gap:12px; border-top:1px solid var(--border);">
+            <button class="btn btn-primary" onclick="reorderAllProcurement()"><i class="fa-solid fa-bolt"></i> Reorder Everything</button>
+            <button class="btn btn-outline" onclick="alert('Procurement report exported as CSV.')"><i class="fa-solid fa-file-export"></i> Export Report</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: MY ORDERS ============ -->
+      <section class="view" id="view-orders">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>My orders</h3><div class="sub">Track status and confirm receipt of deliveries</div></div>
+            <a class="link-action" onclick="goTo('search')"><i class="fa-solid fa-plus"></i> New order</a>
+          </div>
+          <div class="filter-tabs" id="orderFilterTabs">
+            <button class="filter-tab active" data-f="all">All</button>
+            <button class="filter-tab" data-f="transit">In Transit</button>
+            <button class="filter-tab" data-f="delivered">Delivered</button>
+            <button class="filter-tab" data-f="confirmed">Processing</button>
+            <button class="filter-tab" data-f="pending">Pending</button>
+          </div>
+          <table>
+            <thead><tr><th>Order ID</th><th>Supplier</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th></th></tr></thead>
+            <tbody id="allOrdersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: DELIVERY TRACKING ============ -->
+      <section class="view" id="view-tracking">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3 id="trackTitle">Order #ORD-1042 — Amoxicillin 500mg ×500</h3><div class="sub" id="trackSub">MedPharm Wholesale · ETA 12 min</div></div>
+            <button class="btn btn-outline btn-sm" id="callDriverBtn" onclick="openCallModal(DRIVER_INFO)"><i class="fa-solid fa-phone"></i> Call driver</button>
+          </div>
+          <div class="panel-body" id="trackingBody">
+            <div id="deliveryTrackingContent">
+              <div id="map"></div>
+              <div class="tracker-steps">
+                <div class="t-step done"><div class="circ"><i class="fa-solid fa-check"></i></div><div class="lbl">Packed</div></div>
+                <div class="t-step done"><div class="circ"><i class="fa-solid fa-check"></i></div><div class="lbl">On the truck</div></div>
+                <div class="t-step active"><div class="circ">3</div><div class="lbl">5km away</div></div>
+                <div class="t-step"><div class="circ">4</div><div class="lbl">Delivered</div></div>
+              </div>
+              <button class="btn btn-primary" style="margin-top:18px;" onclick="confirmReceipt()"><i class="fa-solid fa-check-double"></i> Confirm receipt</button>
+            </div>
+            <div id="pickupNoticeContent" style="display:none; text-align:center; padding:50px 20px;">
+              <i class="fa-solid fa-store" style="font-size:34px; color:var(--text-faint); margin-bottom:14px; display:block;"></i>
+              <h3 style="margin-bottom:6px;">This supplier doesn't offer delivery</h3>
+              <p style="color:var(--text-mut); font-size:13.5px; max-width:380px; margin:0 auto 18px;">There's no live tracking for pickup orders. Collect your order directly from the supplier, then mark it as received.</p>
+              <button class="btn btn-primary" onclick="confirmReceipt()"><i class="fa-solid fa-check-double"></i> Mark as collected</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: APPLICATIONS ============ -->
+      <section class="view" id="view-applications">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>Supplier applications</h3><div class="sub">Request to trade with wholesalers who aren't yet connected to your account</div></div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('newApplicationModal')"><i class="fa-solid fa-plus"></i> New application</button>
+          </div>
+          <div class="filter-tabs" id="appFilterTabs">
+            <button class="filter-tab active" data-f="all">All</button>
+            <button class="filter-tab" data-f="pending">Pending</button>
+            <button class="filter-tab" data-f="approved">Approved</button>
+            <button class="filter-tab" data-f="declined">Declined</button>
+          </div>
+          <div class="panel-body">
+            <div class="app-cards" id="appCards"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: INVOICES ============ -->
+      <section class="view" id="view-invoices">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Invoices</h3><div class="sub" id="invoicesDueSub">Every invoice generated from your orders</div></div></div>
+          <div class="panel-body" id="invoicesList"></div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: SUPPLIER CHAT ============ -->
+      <section class="view" id="view-supplierchat">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Supplier Chat</h3><div class="sub">Direct messages with suppliers you're connected to via Applications</div></div></div>
+          <div class="chat-shell" id="supplierChatShell">
+            <div class="chat-list" id="supplierChatList"></div>
+            <div class="chat-main">
+              <div class="chat-head">
+                <div class="avatar-sm" id="supplierChatAvatar">?</div>
+                <div style="flex:1; min-width:0;">
+                  <div class="t" id="supplierChatHeadName">Select a supplier</div>
+                  <div class="s" id="supplierChatHeadSub">Choose a conversation from the left</div>
+                </div>
+                <button class="icon-btn" style="margin-left:auto;" onclick="callCurrentSupplier()" title="Call"><i class="fa-solid fa-phone"></i></button>
+              </div>
+              <div class="chat-body" id="supplierChatBody"></div>
+              <div class="chat-input">
+                <input id="supplierChatInput" type="text" placeholder="Type a message...">
+                <button onclick="sendSupplierMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: PHARMACY CHAT ROOM ============ -->
+      <section class="view" id="view-chatroom">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Pharmacy Chat Room</h3><div class="sub">Ask nearby pharmacies for urgent stock, region-wide</div></div></div>
+          <div class="chat-shell">
+            <div class="chat-list">
+              <div class="chat-list-item active"><div class="cn">Harare — General</div><div class="cm">Does anyone have Atorvastatin 20mg?</div></div>
+              <div class="chat-list-item"><div class="cn">Bulawayo — General</div><div class="cm">Cetirizine shortage this week</div></div>
+              <div class="chat-list-item"><div class="cn">Urgent Requests</div><div class="cm">Need Insulin urgently, patient waiting</div></div>
+            </div>
+            <div class="chat-main">
+              <div class="chat-head"><i class="fa-solid fa-people-group" style="color:var(--primary)"></i><div><div class="t">Harare — General</div><div class="s">148 pharmacies online</div></div></div>
+              <div class="chat-body" id="roomChatBody">
+                <div class="msg in"><strong>City Pharmacy:</strong> Does anyone in Harare have Atorvastatin 20mg? My patient needs it urgently.<div class="meta">10:14 AM</div></div>
+                <div class="msg in"><strong>Greenwood Pharmacy:</strong> Yes, we have 50 tablets. Send them over.<div class="meta">10:16 AM</div></div>
+              </div>
+              <div class="chat-input">
+                <input id="roomChatInput" type="text" placeholder="Type a message to the room...">
+                <button onclick="sendRoomMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: AI ASSISTANT ============ -->
+      <section class="view" id="view-assistant">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>NexaHealth AI Assistant</h3><div class="sub">Scoped strictly to your pharmacy's data on NexaHealth</div></div>
+          </div>
+          <div class="chat-shell ai-shell" style="grid-template-columns:1fr;">
+            <div class="chat-main">
+              <div class="ai-scope-note">
+                <i class="fa-solid fa-circle-info"></i>
+                This assistant can help with anything inside NexaHealth for your account — prices, suppliers, delivery, payments, orders, catalogue, procurement, applications, invoices, settings — but stays within the app.
+              </div>
+              <div class="chat-body" id="aiChatBody">
+                <div class="msg ai">Hi Tendai — I'm your NexaHealth assistant. Ask me things like "which supplier is cheapest for Amoxicillin including delivery", "what payment methods can I use", "what's about to run out", or "how does pay-after-delivery work". What would you like to know?</div>
+              </div>
+              <div class="chat-input ai-input">
+                <button id="voiceBtn" class="voice-btn" onclick="toggleVoiceInput()" title="Voice input"><i class="fa-solid fa-microphone"></i></button>
+                <input id="aiChatInput" type="text" placeholder="Ask about your stock, orders, suppliers, invoices, or settings...">
+                <button onclick="sendAiMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: ANALYTICS ============ -->
+      <section class="view" id="view-analytics">
+        <div class="panel-head" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:22px;">
+          <div><h3>Overview</h3></div>
+          <div style="display:flex; gap:10px;">
+            <select id="analyticsRange" style="border:1px solid var(--border); border-radius:9px; padding:8px 12px; font-size:12.5px;">
+              <option>This Quarter</option><option>This Month</option><option>This Year</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="alert('Report exported as CSV.')"><i class="fa-solid fa-file-export"></i> Export Report</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">Total Spend</div><div class="value">$4,280</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 12%</div></div>
+          <div class="stat-card"><div class="label">Orders</div><div class="value">31</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 8%</div></div>
+          <div class="stat-card"><div class="label">Top Medicine</div><div class="value" style="font-size:18px;">Amoxicillin</div><div class="trend flat">124 units</div></div>
+          <div class="stat-card"><div class="label">Avg Order Value</div><div class="value">$138</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 5%</div></div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><h3>Orders placed — last 6 months</h3></div>
+            <div class="panel-body">
+              <div class="bars" id="ordersBarChart"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Top medicines ordered</h3></div>
+            <div class="panel-body">
+              <div class="donut-wrap">
+                <div class="donut" id="topMedDonut"></div>
+                <div id="donutLegend"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Top selling products</h3></div>
+          <div class="panel-body" id="topSellingList"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Supplier performance</h3><div class="sub">On-time delivery rate, last 90 days</div></div></div>
+          <div class="panel-body" id="supplierPerf"></div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: SETTINGS ============ -->
+      <section class="view" id="view-settings">
+        <div class="panel">
+          <div class="panel-head"><h3>Account settings</h3></div>
+          <div class="panel-body">
+            <div class="settings-grid">
+              <div class="settings-card">
+                <h4><i class="fa-solid fa-store" style="color:var(--primary)"></i> Profile settings</h4>
+                <div class="info-row"><strong>Pharmacy:</strong> City Pharmacy</div>
+                <div class="info-row"><strong>Address:</strong> 45 Baker Avenue, Harare</div>
+                <div class="info-row"><strong>Phone:</strong> +263 71 234 5678</div>
+                <a class="link-action" style="display:inline-block; margin-top:10px;">Edit profile</a>
+              </div>
+              <div class="settings-card">
+                <h4><i class="fa-solid fa-shield-halved" style="color:var(--success)"></i> Licence management</h4>
+                <div class="info-row"><span class="badge ok"><i class="fa-solid fa-check"></i> MCAZ Licence valid</span></div>
+                <div class="info-row" style="margin-top:8px;"><strong>Expires:</strong> 31 Dec 2027</div>
+                <a class="link-action" style="display:inline-block; margin-top:8px;">Upload new licence</a>
+              </div>
+              <div class="settings-card">
+                <h4><i class="fa-solid fa-bell" style="color:var(--warning)"></i> Notification preferences</h4>
+                <label class="check-row"><input type="checkbox" checked> Order updates</label>
+                <label class="check-row"><input type="checkbox" checked> Stock alerts</label>
+                <label class="check-row"><input type="checkbox" checked> Marketing emails</label>
+                <label class="check-row"><input type="checkbox"> Drug recalls</label>
+                <button class="btn btn-primary btn-sm" style="margin-top:6px;" onclick="alert('Notification preferences saved.')">Save preferences</button>
+              </div>
+              <div class="settings-card">
+                <h4><i class="fa-solid fa-users" style="color:var(--primary-dark)"></i> User management</h4>
+                <div class="role-row"><span class="rname">Tendai Moyo (you)</span><span class="rtag">Admin</span></div>
+                <div class="role-row"><span class="rname">Sarah Jones</span><span class="rtag">Purchaser</span></div>
+                <div class="role-row"><span class="rname">Mark Brown</span><span class="rtag">Viewer</span></div>
+                <a class="link-action" style="display:inline-block; margin-top:10px;">Add staff user</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Payment methods</h3><div class="sub">Available options for paying suppliers on NexaHealth</div></div>
+            <button class="btn btn-outline btn-sm"><i class="fa-solid fa-plus"></i> Add bank account</button>
+          </div>
+          <div class="panel-body" id="settingsPaymentMethods"></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ CART DRAWER ============ -->
+<button class="cart-fab" onclick="toggleDrawer(true)"><i class="fa-solid fa-cart-shopping"></i><span class="count" id="cartCount">0</span></button>
+<div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
+<div class="drawer" id="cartDrawer">
+  <div class="drawer-head"><h3>Your cart</h3><i class="fa-solid fa-xmark" style="cursor:pointer" onclick="toggleDrawer(false)"></i></div>
+  <div class="drawer-body" id="cartBody"></div>
+  <div class="drawer-foot">
+    <div class="cart-total-row"><span>Subtotal</span><span id="cartSubtotal">$0.00</span></div>
+    <div class="cart-total-row grand"><span>Total</span><span id="cartGrandTotal">$0.00</span></div>
+    <button class="btn btn-primary btn-block" onclick="openPaymentChoice()"><i class="fa-solid fa-bolt"></i> Place order</button>
+  </div>
+</div>
+
+<!-- ============ NEW APPLICATION MODAL ============ -->
+<div class="modal-overlay" id="newApplicationModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>New supplier application</h3><i class="fa-solid fa-xmark" onclick="closeModal('newApplicationModal')"></i></div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:14px;">
+        <label style="display:block; font-size:12.5px; font-weight:600; margin-bottom:6px;">Wholesaler name</label>
+        <input id="newAppSupplier" type="text" placeholder="e.g. AfriPharma Ltd" style="width:100%; border:1px solid var(--border); border-radius:9px; padding:10px 12px; font-size:13.5px;">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="submitNewApplication()"><i class="fa-solid fa-paper-plane"></i> Submit application</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRODUCT MODAL ============ -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-box wide">
+    <div class="modal-head"><h3>Product details</h3><i class="fa-solid fa-xmark" onclick="closeModal('productModal')"></i></div>
+    <div class="modal-body" id="productModalBody"></div>
+  </div>
+</div>
+
+<!-- ============ PAYMENT CHOICE MODAL ============ -->
+<div class="modal-overlay" id="paymentChoiceModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>How would you like to pay?</h3><i class="fa-solid fa-xmark" onclick="closeModal('paymentChoiceModal')"></i></div>
+    <div class="modal-body">
+      <div class="pay-option-choice">
+        <button class="pay-choice-card" onclick="choosePayNow()"><i class="fa-solid fa-wallet"></i><div class="t">Pay now</div><div class="s">Choose a payment method</div></button>
+        <button class="pay-choice-card" onclick="choosePayLater()"><i class="fa-solid fa-truck-ramp-box"></i><div class="t">Pay after delivery</div><div class="s">Pay when order arrives</div></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAYMENT METHOD MODAL ============ -->
+<div class="modal-overlay" id="paymentMethodModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Select payment method</h3><i class="fa-solid fa-xmark" onclick="closeModal('paymentMethodModal')"></i></div>
+    <div class="modal-body" id="paymentMethodBody"></div>
+  </div>
+</div>
+
+<!-- ============ CALL MODAL ============ -->
+<div class="modal-overlay" id="callModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="callModalTitle">Call the driver</h3><i class="fa-solid fa-xmark" onclick="closeModal('callModal')"></i></div>
+    <div class="modal-body">
+      <button class="call-option" onclick="callOnNexa()"><i class="fa-solid fa-phone-volume"></i><div><div class="po-name">Call on Nexa</div><div class="po-desc">In-app call, no airtime used</div></div></button>
+      <button class="call-option" onclick="callOnPhone()"><i class="fa-solid fa-phone"></i><div><div class="po-name">Call on phone</div><div class="po-desc" id="driverPhoneLabel">Opens your phone dialer</div></div></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INVOICE MODAL ============ -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal-box wide">
+    <div class="modal-head"><h3>Invoice</h3><i class="fa-solid fa-xmark" onclick="closeModal('invoiceModal'); goTo('orders');"></i></div>
+    <div class="modal-body" id="invoiceBody"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MOCK DATA LAYER
+   Everything below is placeholder data standing in for real API calls.
+   Replace each block with a fetch()/your backend call that returns the
+   same shape, and the UI will keep working unchanged.
+   ========================================================================= */
+
+const MOCK_ORDERS = [
+  {id:'ORD-1042', supplier:'MedPharm Wholesale', items:'Amoxicillin 500mg ×500', total:'$225.00', status:'transit', date:'Jul 5, 2026'},
+  {id:'ORD-1041', supplier:'ZimDrug Distributors', items:'Paracetamol 500mg ×1000', total:'$450.00', status:'confirmed', date:'Jul 4, 2026'},
+  {id:'ORD-1039', supplier:'HealthLink Suppliers', items:'ORS Sachets ×300', total:'$90.00', status:'delivered', date:'Jul 2, 2026'},
+  {id:'ORD-1035', supplier:'PharmaCorp Zimbabwe', items:'Cetirizine 10mg ×200', total:'$38.00', status:'pending', date:'Jul 1, 2026'},
+];
+
+const MOCK_SUPPLIERS = {
+  'paracetamol 500mg':[
+    {name:'ZimDrug Distributors', loc:'Msasa, Harare', price:0.45, wasPrice:0.52, qty:4200, eta:'3 days', hasDelivery:true, deliveryFee:0, desc:'Locally manufactured, GMP-certified. Blister packs of 100.', phone:'+263 77 123 4567'},
+    {name:'MedPharm Wholesale', loc:'Workington, Harare', price:0.50, qty:6000, eta:'Tomorrow', hasDelivery:true, deliveryFee:5, desc:'Imported stock, bulk cartons of 1000. Fast dispatch.', phone:'+263 71 987 6543'},
+    {name:'HealthLink Suppliers', loc:'Graniteside, Harare', price:0.55, qty:100, eta:'Today', hasDelivery:false, desc:'Small-batch supplier, collection from warehouse only.', phone:'+263 78 555 2211'},
+  ],
+  'amoxicillin 500mg':[
+    {name:'MedPharm Wholesale', loc:'Workington, Harare', price:0.28, wasPrice:0.34, qty:1800, eta:'Tomorrow', hasDelivery:true, deliveryFee:0, desc:'Promo this week — stock up while price is down.', phone:'+263 71 987 6543'},
+    {name:'PharmaCorp Zimbabwe', loc:'Southerton, Harare', price:0.31, qty:900, eta:'2 days', hasDelivery:true, deliveryFee:8, desc:'Locally packaged capsules, batch-tested.', phone:'+263 77 222 8890'},
+    {name:'ZimDrug Distributors', loc:'Msasa, Harare', price:0.33, qty:2500, eta:'3 days', hasDelivery:false, desc:'Warehouse collection only, no delivery fleet.', phone:'+263 77 123 4567'},
+  ],
+};
+
+// Zimbabwe-relevant payment methods available on the platform
+const PAYMENT_METHODS = [
+  {id:'ecocash', name:'EcoCash', icon:'fa-mobile-screen-button', desc:'Pay instantly via EcoCash mobile money'},
+  {id:'onemoney', name:'OneMoney', icon:'fa-mobile-screen-button', desc:'NetOne mobile money'},
+  {id:'telecash', name:'Telecash', icon:'fa-mobile-screen-button', desc:'Telecel mobile money'},
+  {id:'zipit', name:'ZIPIT', icon:'fa-money-bill-transfer', desc:'Instant bank-to-bank transfer'},
+  {id:'mukuru', name:'Mukuru', icon:'fa-wallet', desc:'Pay via Mukuru wallet or agent'},
+  {id:'bank', name:'Bank Transfer', icon:'fa-building-columns', desc:'RTGS / USD bank transfer'},
+  {id:'card', name:'Visa / Mastercard', icon:'fa-credit-card', desc:'Debit or credit card'},
+];
+
+const DRIVER_INFO = {name:'Farai T.', phone:'+263 77 456 1230', vehicle:'Delivery van — AEB 4521'};
+
+const CATALOGUE_ITEMS = [
+  {batch:'BATCH-001', name:'Amoxicillin 500mg', generic:'Amoxicillin', pack:'100 tabs', price:0.28, expiry:'Dec 2027', supplier:'MedPharm Wholesale'},
+  {batch:'BATCH-002', name:'Paracetamol 500mg', generic:'Paracetamol', pack:'100 tabs', price:0.45, expiry:'Mar 2028', supplier:'ZimDrug Distributors'},
+  {batch:'BATCH-003', name:'ORS Sachets x10', generic:'Oral Rehydration Salts', pack:'10 sachets', price:0.30, expiry:'Jun 2028', supplier:'HealthLink Suppliers'},
+  {batch:'BATCH-004', name:'Atorvastatin 20mg', generic:'Atorvastatin', pack:'30 tabs', price:1.10, expiry:'Sep 2027', supplier:'PharmaCorp Zimbabwe'},
+  {batch:'BATCH-005', name:'Cetirizine 10mg', generic:'Cetirizine', pack:'30 tabs', price:0.19, expiry:'Jan 2028', supplier:'ZimDrug Distributors'},
+];
+
+const PROCUREMENT_ITEMS = [
+  {name:'Amoxicillin 500mg', stock:12, stockLevel:'low', days:4, supplier:'MedPharm Wholesale', price:'$0.28/unit', delivery:'Tomorrow'},
+  {name:'ORS Sachets', stock:80, stockLevel:'warning', days:9, supplier:'HealthLink Suppliers', price:'$0.30/unit', delivery:'Today'},
+  {name:'Atorvastatin 20mg', stock:40, stockLevel:'warning', days:11, supplier:'PharmaCorp Zimbabwe', price:'$1.10/unit', delivery:'2 days'},
+  {name:'Paracetamol 500mg', stock:210, stockLevel:'healthy', days:22, supplier:'ZimDrug Distributors', price:'$0.45/unit', delivery:'3 days'},
+];
+
+const APPLICATIONS = [
+  {name:'AfriPharma Ltd', date:'10 Jun 2026', status:'approved'},
+  {name:'ZimMed Supply', date:'18 Jun 2026', status:'pending'},
+  {name:'HealthBridge', date:'20 Jun 2026', status:'declined'},
+  {name:'NatPharm', date:'25 Jun 2026', status:'pending'},
+];
+
+const INVOICES = [
+  {id:'INV-4491', supplier:'MedPharm Wholesale', date:'25 Jun 2026', amount:'$180', status:'overdue'},
+  {id:'INV-4492', supplier:'ZimDrug Distributors', date:'28 Jun 2026', amount:'$420', status:'due_soon'},
+  {id:'INV-4493', supplier:'HealthLink Suppliers', date:'2 Jul 2026', amount:'$220', status:'paid'},
+];
+
+// Directory of supplier phone numbers, built from the supplier data already in the app
+const SUPPLIER_PHONE_DIRECTORY = {};
+Object.values(MOCK_SUPPLIERS).flat().forEach(s=>{
+  if(!SUPPLIER_PHONE_DIRECTORY[s.name]) SUPPLIER_PHONE_DIRECTORY[s.name] = s.phone;
+});
+
+// Seed conversations for suppliers you're already connected/trading with
+const SUPPLIER_CHATS = {
+  'MedPharm Wholesale': [
+    {dir:'in', text:"Your order ORD-1042 has been packed and is on the truck.", time:'9:40 AM'},
+    {dir:'out', text:'Great, thank you! What time should we expect it?', time:'9:41 AM'},
+    {dir:'in', text:'About 12 minutes from now.', time:'9:42 AM'},
+  ],
+  'ZimDrug Distributors': [
+    {dir:'in', text:'Price update: Paracetamol 500mg is now $0.45/unit.', time:'Yesterday'},
+  ],
+  'HealthLink Suppliers': [
+    {dir:'in', text:'Reminder: your order is ready for collection at our Graniteside warehouse.', time:'2 days ago'},
+  ],
+};
+let currentSupplierChat = null;
+function getConnectedSuppliers(){
+  const approved = APPLICATIONS.filter(a=>a.status==='approved').map(a=>a.name);
+  const base = ['MedPharm Wholesale', 'ZimDrug Distributors', 'HealthLink Suppliers', 'PharmaCorp Zimbabwe'];
+  return [...new Set([...base, ...approved])];
+}
+function lastMsgPreview(name){
+  const msgs = SUPPLIER_CHATS[name];
+  if(!msgs || !msgs.length) return 'No messages yet — say hello!';
+  return msgs[msgs.length-1].text;
+}
+function renderSupplierChatList(){
+  const suppliers = getConnectedSuppliers();
+  document.getElementById('supplierChatList').innerHTML = suppliers.map(s=>`
+    <div class="chat-list-item ${s===currentSupplierChat?'active':''}" onclick="openSupplierChat('${s.replace(/'/g,"\\'")}')">
+      <div class="cn">${s}</div><div class="cm">${lastMsgPreview(s)}</div>
+    </div>`).join('');
+}
+function openSupplierChat(name){
+  currentSupplierChat = name;
+  if(!SUPPLIER_CHATS[name]) SUPPLIER_CHATS[name] = [];
+  renderSupplierChatList();
+  document.getElementById('supplierChatAvatar').textContent = name.slice(0,2).toUpperCase();
+  document.getElementById('supplierChatHeadName').textContent = name;
+  document.getElementById('supplierChatHeadSub').textContent = 'Connected supplier · online';
+  renderSupplierChatBody();
+}
+function renderSupplierChatBody(){
+  const msgs = SUPPLIER_CHATS[currentSupplierChat] || [];
+  document.getElementById('supplierChatBody').innerHTML = msgs.length
+    ? msgs.map(m=>`<div class="msg ${m.dir==='in'?'in':'out'}">${m.text}<div class="meta">${m.time}</div></div>`).join('')
+    : `<p style="text-align:center; color:var(--text-mut); font-size:13px; margin-top:40px;">No messages yet — say hello!</p>`;
+  document.getElementById('supplierChatBody').scrollTop = 9999;
+}
+function sendSupplierMsg(){
+  const input = document.getElementById('supplierChatInput');
+  if(!currentSupplierChat || !input.value.trim()) return;
+  SUPPLIER_CHATS[currentSupplierChat].push({dir:'out', text:input.value, time:'Just now'});
+  input.value = '';
+  renderSupplierChatBody();
+  renderSupplierChatList();
+}
+document.getElementById('supplierChatInput')?.addEventListener('keydown', e=>{ if(e.key==='Enter') sendSupplierMsg(); });
+function callCurrentSupplier(){
+  if(!currentSupplierChat){ alert('Select a supplier conversation first.'); return; }
+  openCallModal({name: currentSupplierChat, phone: SUPPLIER_PHONE_DIRECTORY[currentSupplierChat]});
+}
+
+/* =========================================================================
+   RENDERING
+   ========================================================================= */
+const statusLabel = {pending:'Pending', confirmed:'Confirmed', transit:'In Transit', delivered:'Delivered'};
+
+function orderRow(o, withAction){
+  return `<tr>
+    <td><strong>${o.id}</strong></td>
+    <td>${o.supplier}</td>
+    <td>${o.items}</td>
+    <td>${o.total}</td>
+    <td><span class="badge ${o.status}">${statusLabel[o.status]}</span></td>
+    <td>${o.date}</td>
+    ${withAction ? `<td>${o.hasDelivery===false ? '<span style="color:var(--text-mut); font-size:12.5px;">Pickup</span>' : `<a class="link-action" onclick='lastOrder=${JSON.stringify(o)}; goTo("tracking")'>Track</a>`}${o.lineItems ? ` · <a class="link-action" onclick='showInvoice(${JSON.stringify(o)})'>Invoice</a>` : ''}</td>` : ''}
+  </tr>`;
+}
+document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
+document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+
+/* ---- navigation ---- */
+const titles = {
+  dashboard:['Dashboard',"Welcome back, here's what's happening today"],
+  search:['Search & Order','Compare live prices across every registered wholesaler'],
+  catalogue:['Product Catalogue','Full stock list with batch and expiry details'],
+  procurement:['Smart Procurement','AI-ranked reorder suggestions based on your usage'],
+  orders:['My Orders','Track status and confirm delivery receipts'],
+  tracking:['Delivery Tracking','Live location of your incoming order'],
+  applications:['Applications','Requests to trade with new suppliers'],
+  invoices:['Invoices','Every invoice generated from your orders'],
+  supplierchat:['Supplier Chat','Direct messages with your connected suppliers'],
+  chatroom:['Pharmacy Chat Room','Ask the wider pharmacy network for urgent stock'],
+  assistant:['AI Assistant','Ask questions about your own pharmacy data'],
+  analytics:['Analytics',"Trends and supplier performance for your pharmacy"],
+  settings:['Settings','Manage your pharmacy profile'],
+};
+function goTo(view){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+  document.getElementById('pageTitle').textContent = titles[view][0];
+  document.getElementById('pageSub').textContent = titles[view][1];
+  document.getElementById('sidebar').classList.remove('open');
+  if(view==='tracking') { renderTracking(); setTimeout(initMap, 50); }
+  if(view==='analytics') setTimeout(renderAnalytics, 30);
+  if(view==='supplierchat') {
+    renderSupplierChatList();
+    if(!currentSupplierChat) openSupplierChat(getConnectedSuppliers()[0]);
+  }
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>goTo(n.dataset.view)));
+document.getElementById('menuToggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+/* ---- search & supplier comparison ---- */
+let currentMedKey = 'paracetamol 500mg';
+function runSearch(){
+  const q = document.getElementById('medSearchInput').value.trim().toLowerCase();
+  currentMedKey = MOCK_SUPPLIERS[q] ? q : 'paracetamol 500mg';
+  const list = MOCK_SUPPLIERS[currentMedKey];
+  document.getElementById('resultTitle').textContent = `${document.getElementById('medSearchInput').value} — ${list.length} suppliers in stock`;
+  const cheapest = Math.min(...list.map(s=>s.price));
+  document.getElementById('supplierResults').innerHTML = list.map((s,i)=>`
+    <div class="supplier-card ${s.price===cheapest?'best':''}">
+      <div class="sname">${s.name}</div>
+      <div class="sloc"><i class="fa-solid fa-location-dot"></i> ${s.loc}</div>
+      ${s.wasPrice ? `<div class="was-price">Was $${s.wasPrice.toFixed(2)}</div>` : ''}
+      <div class="price">$${s.price.toFixed(2)} <span>/ tablet</span></div>
+      <div class="meta">
+        <div><strong>${s.qty.toLocaleString()}</strong>in stock</div>
+        <div><strong>${s.hasDelivery ? s.eta : 'Pickup only'}</strong>${s.hasDelivery ? 'delivery' : 'no delivery'}</div>
+      </div>
+      <div class="delivery-badge ${s.hasDelivery ? (s.deliveryFee===0?'free':'paid') : 'none'}">
+        <i class="fa-solid ${s.hasDelivery ? 'fa-truck' : 'fa-store'}"></i>
+        ${s.hasDelivery ? (s.deliveryFee===0 ? 'Free delivery' : '$'+s.deliveryFee.toFixed(2)+' delivery fee') : 'No delivery — collect in person'}
+      </div>
+      <div class="supplier-card-actions">
+        <button class="btn btn-outline btn-sm" style="flex:1" onclick='viewProduct(${JSON.stringify(currentMedKey)}, ${i})'><i class="fa-regular fa-eye"></i> View product</button>
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick='addToCart(${JSON.stringify(currentMedKey)}, ${i})'><i class="fa-solid fa-cart-plus"></i> Add</button>
+      </div>
+    </div>`).join('');
+}
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  document.getElementById('medSearchInput').value = c.textContent;
+  runSearch();
+}));
+runSearch();
+
+/* ---- generic modal helpers ---- */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ---- view product ---- */
+function viewProduct(medKey, idx){
+  const s = MOCK_SUPPLIERS[medKey][idx];
+  const medName = document.getElementById('medSearchInput').value || medKey;
+  document.getElementById('productModalBody').innerHTML = `
+    <div class="product-hero"><i class="fa-solid fa-pills"></i></div>
+    <h3 style="margin-bottom:2px;">${medName}</h3>
+    <div style="color:var(--text-mut); font-size:12.5px; margin-bottom:16px;">Sold by ${s.name}</div>
+    <p style="font-size:13.5px; color:var(--text); margin-bottom:16px;">${s.desc || 'No additional description provided by the supplier.'}</p>
+    <div class="product-row"><span class="k">Price</span><span>${s.wasPrice ? `<span style="text-decoration:line-through;color:var(--text-faint)">$${s.wasPrice.toFixed(2)}</span> ` : ''}<strong>$${s.price.toFixed(2)}</strong> / unit</span></div>
+    <div class="product-row"><span class="k">In stock</span><span>${s.qty.toLocaleString()} units</span></div>
+    <div class="product-row"><span class="k">Delivery</span><span>${s.hasDelivery ? (s.deliveryFee===0?'Free':'$'+s.deliveryFee.toFixed(2)+' fee') + ' · ' + s.eta : 'Not offered — pickup only'}</span></div>
+    <div class="product-row"><span class="k">Location</span><span>${s.loc}</span></div>
+    <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="closeModal('productModal'); addToCart(${JSON.stringify(medKey)}, ${idx});"><i class="fa-solid fa-cart-plus"></i> Add to cart</button>
+  `;
+  openModal('productModal');
+}
+
+/* ---- cart ---- */
+let cart = [];
+function addToCart(medKey, idx){
+  const s = MOCK_SUPPLIERS[medKey][idx];
+  const existing = cart.find(c=>c.medKey===medKey && c.idx===idx);
+  if(existing) existing.qty += 100; else cart.push({medKey, idx, supplier:s.name, price:s.price, qty:100, hasDelivery:s.hasDelivery, deliveryFee:s.deliveryFee||0});
+  renderCart();
+  toggleDrawer(true);
+}
+function changeQty(i, delta){
+  cart[i].qty = Math.max(0, cart[i].qty + delta);
+  if(cart[i].qty===0) cart.splice(i,1);
+  renderCart();
+}
+function setQty(i, val){
+  const q = Math.max(0, parseInt(val)||0);
+  cart[i].qty = q;
+  if(q===0) cart.splice(i,1);
+  renderCart();
+}
+function renderCart(){
+  document.getElementById('cartCount').textContent = cart.length;
+  document.getElementById('cartBody').innerHTML = cart.length ? cart.map((c,i)=>`
+    <div class="cart-item">
+      <div><div class="ci-name">Item from ${c.supplier}</div><div class="ci-sup">$${c.price.toFixed(2)} / unit · ${c.hasDelivery ? (c.deliveryFee===0?'Free delivery':'$'+c.deliveryFee.toFixed(2)+' delivery') : 'Pickup only'}</div></div>
+      <div class="qty-ctrl">
+        <button onclick="changeQty(${i},-50)">−</button><input type="number" min="0" step="10" value="${c.qty}" onchange="setQty(${i}, this.value)"><button onclick="changeQty(${i},50)">+</button>
+      </div>
+    </div>`).join('') : `<p style="color:var(--text-mut); font-size:13px; text-align:center; margin-top:40px;">Your cart is empty</p>`;
+  const subtotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const deliveryTotal = cart.reduce((s,c)=>s+(c.hasDelivery?c.deliveryFee:0),0);
+  document.getElementById('cartSubtotal').textContent = '$'+subtotal.toFixed(2);
+  document.getElementById('cartGrandTotal').textContent = '$'+(subtotal+deliveryTotal).toFixed(2);
+}
+function toggleDrawer(show){
+  document.getElementById('cartDrawer').classList.toggle('show', show);
+  document.getElementById('drawerOverlay').classList.toggle('show', show);
+}
+renderCart();
+
+/* ---- pay now / pay after delivery flow ---- */
+function openPaymentChoice(){
+  if(!cart.length) return;
+  toggleDrawer(false);
+  openModal('paymentChoiceModal');
+}
+function choosePayNow(){
+  closeModal('paymentChoiceModal');
+  document.getElementById('paymentMethodBody').innerHTML = PAYMENT_METHODS.map(m=>`
+    <button class="pay-option" onclick="finalizeOrder('paid', ${JSON.stringify(m.name)})">
+      <i class="fa-solid ${m.icon}"></i>
+      <div><div class="po-name">${m.name}</div><div class="po-desc">${m.desc}</div></div>
+    </button>`).join('');
+  openModal('paymentMethodModal');
+}
+function choosePayLater(){
+  closeModal('paymentChoiceModal');
+  finalizeOrder('pay_on_delivery', null);
+}
+
+let lastOrder = null;
+function finalizeOrder(paymentStatus, methodName){
+  closeModal('paymentMethodModal');
+  closeModal('paymentChoiceModal');
+
+  // Reduce each supplier's displayed stock by the ordered quantity.
+  // In production this should call your backend so the supplier's own
+  // dashboard reflects the change immediately; if that endpoint isn't
+  // wired up yet, the supplier should be prompted to confirm/adjust the
+  // reduction manually from their side.
+  cart.forEach(c=>{
+    const supplierEntry = MOCK_SUPPLIERS[c.medKey][c.idx];
+    supplierEntry.qty = Math.max(0, supplierEntry.qty - c.qty);
+  });
+
+  const anyDelivery = cart.some(c=>c.hasDelivery);
+  const orderId = 'ORD-' + Math.floor(1000+Math.random()*9000);
+  const subtotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const deliveryTotal = cart.reduce((s,c)=>s+(c.hasDelivery?c.deliveryFee:0),0);
+  lastOrder = {
+    id:orderId,
+    supplier: cart.map(c=>c.supplier).join(', '),
+    items: cart.length + ' item(s)',
+    lineItems: cart.map(c=>({
+      name: c.medKey.replace(/\b\w/g, ch=>ch.toUpperCase()),
+      supplier: c.supplier, qty: c.qty, price: c.price,
+      lineTotal: c.price*c.qty, hasDelivery: c.hasDelivery, deliveryFee: c.deliveryFee,
+    })),
+    subtotal, deliveryTotal,
+    total: '$'+(subtotal + deliveryTotal).toFixed(2),
+    status: anyDelivery ? 'confirmed' : 'delivered', // pickup orders just show as bought, no tracking pipeline
+    date: 'Just now',
+    hasDelivery: anyDelivery,
+    paymentStatus, methodName,
+  };
+  MOCK_ORDERS.unshift(lastOrder);
+  document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
+  document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+
+  // Record the invoice for this order so it appears on the persistent Invoices page.
+  INVOICES.unshift({
+    id: 'INV-' + orderId.replace('ORD-',''),
+    supplier: lastOrder.supplier,
+    date: new Date().toLocaleDateString(),
+    amount: lastOrder.total,
+    status: paymentStatus==='paid' ? 'paid' : 'due_soon',
+  });
+  renderInvoices();
+
+  cart = [];
+  renderCart();
+  showInvoice(lastOrder);
+}
+
+function showInvoice(o){
+  const paymentBadge = o.paymentStatus==='paid'
+    ? `<span class="badge delivered">Paid via ${o.methodName}</span>`
+    : `<span class="badge pending">Pay on delivery/collection</span>`;
+  document.getElementById('invoiceBody').innerHTML = `
+    <div class="invoice-head">
+      <div><div class="logo-mark">N</div><h4>NexaHealth</h4><div style="font-size:12px; color:var(--text-mut);">City Pharmacy, Harare</div></div>
+      <div class="inv-meta"><div><strong>Invoice for ${o.id}</strong></div><div>${o.date === 'Just now' ? new Date().toLocaleDateString() : o.date}</div></div>
+    </div>
+    <table class="invoice-table">
+      <thead><tr><th>Item</th><th>Supplier</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead>
+      <tbody>
+        ${o.lineItems.map(li=>`
+          <tr>
+            <td>${li.name}</td><td>${li.supplier}</td><td>${li.qty}</td><td>$${li.price.toFixed(2)}</td><td>$${li.lineTotal.toFixed(2)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="invoice-totals">
+      <div class="row"><span>Subtotal</span><span>$${o.subtotal.toFixed(2)}</span></div>
+      <div class="row"><span>Delivery</span><span>${o.deliveryTotal===0 ? 'Free' : '$'+o.deliveryTotal.toFixed(2)}</span></div>
+      <div class="row grand"><span>Total</span><span>$${(o.subtotal+o.deliveryTotal).toFixed(2)}</span></div>
+    </div>
+    <div class="invoice-status">${paymentBadge}</div>
+    <p style="font-size:12.5px; color:var(--text-mut); margin-top:14px;">
+      ${o.hasDelivery ? 'This invoice has also been sent to the supplier(s). You can track this order under Delivery Tracking.' : 'No delivery for this order — collect it directly from the supplier with this invoice as proof of purchase.'}
+    </p>
+    <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="closeModal('invoiceModal'); goTo('orders'); window.print();"><i class="fa-solid fa-print"></i> Print / save invoice</button>
+  `;
+  openModal('invoiceModal');
+}
+
+function orderRowTrackAction(o){
+  return o.hasDelivery===false ? `<a class="link-action" style="color:var(--text-mut)">Pickup</a>` : `<a class="link-action" onclick="goTo('tracking')">Track</a>`;
+}
+
+/* ---- Product Catalogue ---- */
+function renderCatalogue(){
+  const raw = document.getElementById('catSupplierFilter').value.trim().toLowerCase();
+  const filter = (raw==='' || raw==='all suppliers') ? 'all' : raw;
+  const rows = filter==='all' ? CATALOGUE_ITEMS : CATALOGUE_ITEMS.filter(c=>c.supplier.toLowerCase().includes(filter));
+  document.getElementById('catalogueBody').innerHTML = rows.length ? rows.map(c=>`
+    <tr>
+      <td>${c.batch}</td><td><strong>${c.name}</strong></td><td>${c.generic}</td><td>${c.pack}</td>
+      <td>$${c.price.toFixed(2)}</td><td>${c.expiry}</td><td>${c.supplier}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="alert('${c.name} added to cart from the catalogue.')"><i class="fa-solid fa-cart-plus"></i></button></td>
+    </tr>`).join('') : `<tr><td colspan="8" style="text-align:center; color:var(--text-mut); padding:30px;">No suppliers match "${raw}".</td></tr>`;
+}
+
+const supplierComboOptions = ['All Suppliers', ...new Set(CATALOGUE_ITEMS.map(c=>c.supplier))];
+function renderSupplierComboList(filterText){
+  filterText = (filterText||'').toLowerCase();
+  const opts = supplierComboOptions.filter(o=>o.toLowerCase().includes(filterText));
+  document.getElementById('supplierComboList').innerHTML = opts.length
+    ? opts.map(o=>`<div class="combo-item" onclick="selectSupplierCombo('${o.replace(/'/g,"\\'")}')">${o}</div>`).join('')
+    : `<div class="combo-item" style="color:var(--text-mut);">No matches</div>`;
+}
+function openSupplierCombo(){
+  renderSupplierComboList('');
+  document.getElementById('supplierComboList').classList.add('show');
+}
+function filterSupplierCombo(){
+  const val = document.getElementById('catSupplierFilter').value;
+  renderSupplierComboList(val);
+  document.getElementById('supplierComboList').classList.add('show');
+  renderCatalogue();
+}
+function selectSupplierCombo(name){
+  document.getElementById('catSupplierFilter').value = name;
+  document.getElementById('supplierComboList').classList.remove('show');
+  renderCatalogue();
+}
+document.addEventListener('click', e=>{
+  const combo = document.getElementById('supplierCombo');
+  if(combo && !combo.contains(e.target)) document.getElementById('supplierComboList').classList.remove('show');
+});
+renderCatalogue();
+
+/* ---- Smart Procurement ---- */
+function renderProcurement(){
+  document.getElementById('procurementBody').innerHTML = PROCUREMENT_ITEMS.map(p=>`
+    <tr>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.stock} <span class="badge ${p.stockLevel==='low'?'low':p.stockLevel==='warning'?'pending':'ok'}">${p.stockLevel==='low'?'Low':p.stockLevel==='warning'?'Warning':'Healthy'}</span></td>
+      <td style="color:${p.days<=5?'var(--danger)':p.days<=12?'var(--warning)':'var(--success)'}; font-weight:700;">${p.days} days</td>
+      <td>${p.supplier}</td><td>${p.price}</td><td>${p.delivery}</td>
+      <td>${p.stockLevel==='healthy'
+          ? `<button class="btn btn-outline btn-sm" onclick="goTo('search')">Plan</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="alert('Reorder placed for ${p.name} with ${p.supplier}.')">Reorder</button>`}</td>
+    </tr>`).join('');
+}
+renderProcurement();
+function reorderAllProcurement(){
+  const urgent = PROCUREMENT_ITEMS.filter(p=>p.stockLevel!=='healthy').map(p=>p.name).join(', ');
+  alert(`Reorder placed for: ${urgent}. Invoices have been sent to each supplier.`);
+}
+
+/* ---- Applications ---- */
+const appStatusBadge = {approved:'ok', pending:'pending', declined:'out'};
+const appStatusLabel = {approved:'Approved', pending:'Pending', declined:'Declined'};
+function renderApplications(filter){
+  filter = filter || 'all';
+  const rows = APPLICATIONS.filter(a=>filter==='all' || a.status===filter);
+  document.getElementById('appCards').innerHTML = rows.map(a=>`
+    <div class="app-card">
+      <h4>${a.name}</h4>
+      <div class="adate">Applied: ${a.date}</div>
+      <span class="badge ${appStatusBadge[a.status]}">${appStatusLabel[a.status]}</span>
+      <div class="aactions">
+        ${a.status==='approved' ? `<a onclick="goTo('search')">View details</a><a onclick="goTo('supplierchat'); openSupplierChat('${a.name.replace(/'/g,"\\'")}');">Message</a>` : ''}
+        ${a.status==='pending' ? `<a onclick="alert('Viewing application status for ${a.name}.')">View status</a><a class="danger" onclick="alert('Application to ${a.name} cancelled.')">Cancel</a>` : ''}
+        ${a.status==='declined' ? `<a onclick="alert('${a.name} declined this application: MCAZ certificate could not be verified.')">View reason</a><a onclick="alert('Reapplied to ${a.name}.')">Reapply</a>` : ''}
+      </div>
+    </div>`).join('');
+}
+renderApplications();
+document.getElementById('appFilterTabs').addEventListener('click', e=>{
+  if(!e.target.classList.contains('filter-tab')) return;
+  document.querySelectorAll('#appFilterTabs .filter-tab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+  renderApplications(e.target.dataset.f);
+});
+function submitNewApplication(){
+  const name = document.getElementById('newAppSupplier').value.trim();
+  if(!name) return;
+  APPLICATIONS.unshift({name, date:'Just now', status:'pending'});
+  renderApplications();
+  closeModal('newApplicationModal');
+  alert(`Application sent to ${name}. You'll be notified once they respond.`);
+}
+
+/* ---- Invoices ---- */
+const invStatusBadge = {overdue:'low', due_soon:'pending', paid:'delivered'};
+const invStatusLabel = {overdue:'Overdue', due_soon:'Due Soon', paid:'Paid'};
+function renderInvoices(){
+  const dueCount = INVOICES.filter(i=>i.status!=='paid').length;
+  document.getElementById('invoicesDueSub').textContent = `${dueCount} invoice(s) due`;
+  document.getElementById('invoicesList').innerHTML = INVOICES.map(i=>`
+    <div class="alert-row" style="align-items:center;">
+      <div class="alert-text" style="flex:1;">
+        <div class="t1">#${i.id}</div>
+        <div class="t2">${i.supplier} · ${i.date}</div>
+      </div>
+      <div style="font-weight:800; font-size:15px; color:var(--primary-dark); width:90px;">${i.amount}</div>
+      <span class="badge ${invStatusBadge[i.status]}" style="margin-right:14px;">${invStatusLabel[i.status]}</span>
+      <a class="link-action" style="margin-right:14px;" onclick="alert('Downloading PDF for ${i.id}...')">Download PDF</a>
+      ${i.status!=='paid' ? `<a class="link-action" style="color:var(--danger);" onclick="payInvoice('${i.id}')">${i.status==='overdue'?'Pay now':'Pay'}</a>` : `<a class="link-action" onclick="alert('Viewing invoice ${i.id}')">View</a>`}
+    </div>`).join('');
+}
+renderInvoices();
+
+function payInvoice(id){
+  document.getElementById('paymentMethodBody').innerHTML = PAYMENT_METHODS.map(m=>`
+    <button class="pay-option" onclick="settleInvoice('${id}', ${JSON.stringify(m.name)})">
+      <i class="fa-solid ${m.icon}"></i>
+      <div><div class="po-name">${m.name}</div><div class="po-desc">${m.desc}</div></div>
+    </button>`).join('');
+  openModal('paymentMethodModal');
+}
+function settleInvoice(id, methodName){
+  const inv = INVOICES.find(i=>i.id===id);
+  if(inv) inv.status = 'paid';
+  closeModal('paymentMethodModal');
+  renderInvoices();
+  alert(`Invoice #${id} paid via ${methodName}.`);
+}
+
+/* ---- Orders filter tabs ---- */
+document.getElementById('orderFilterTabs').addEventListener('click', e=>{
+  if(!e.target.classList.contains('filter-tab')) return;
+  document.querySelectorAll('#orderFilterTabs .filter-tab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+  const f = e.target.dataset.f;
+  const rows = f==='all' ? MOCK_ORDERS : MOCK_ORDERS.filter(o=>o.status===f);
+  document.getElementById('allOrdersBody').innerHTML = rows.length
+    ? rows.map(o=>orderRow(o,true)).join('')
+    : `<tr><td colspan="7" style="text-align:center; color:var(--text-mut); padding:30px;">No orders in this category.</td></tr>`;
+});
+
+function renderTracking(){
+  const noDelivery = lastOrder && lastOrder.hasDelivery===false;
+  document.getElementById('deliveryTrackingContent').style.display = noDelivery ? 'none' : 'block';
+  document.getElementById('pickupNoticeContent').style.display = noDelivery ? 'block' : 'none';
+  document.getElementById('callDriverBtn').style.display = noDelivery ? 'none' : 'inline-flex';
+  if(lastOrder){
+    document.getElementById('trackTitle').textContent = `Order #${lastOrder.id} — ${lastOrder.items}`;
+    document.getElementById('trackSub').textContent = `${lastOrder.supplier} · ${noDelivery ? 'Pickup order' : 'ETA 12 min'}`;
+  }
+}
+
+function markOrderDelivered(){
+  if(!lastOrder) return;
+  lastOrder.status = 'delivered';
+  const stored = MOCK_ORDERS.find(o=>o.id===lastOrder.id);
+  if(stored) stored.status = 'delivered';
+  document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
+  document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+}
+
+function confirmReceipt(){
+  if(!lastOrder){ alert('Delivery confirmed as received.'); return; }
+  markOrderDelivered();
+  if(lastOrder.paymentStatus==='pay_on_delivery'){
+    alert('Delivery confirmed as received. Choose a payment method now to settle this order.');
+    payForDeliveredOrder();
+  } else {
+    alert('Delivery confirmed as received. Payment was already settled — invoice is marked paid.');
+  }
+}
+
+function payForDeliveredOrder(){
+  if(!lastOrder) return;
+  document.getElementById('paymentMethodBody').innerHTML = PAYMENT_METHODS.map(m=>`
+    <button class="pay-option" onclick="settleDeliveryPayment(${JSON.stringify(m.name)})">
+      <i class="fa-solid ${m.icon}"></i>
+      <div><div class="po-name">${m.name}</div><div class="po-desc">${m.desc}</div></div>
+    </button>`).join('');
+  openModal('paymentMethodModal');
+}
+
+function settleDeliveryPayment(methodName){
+  if(!lastOrder) return;
+  lastOrder.paymentStatus = 'paid';
+  lastOrder.methodName = methodName;
+  const stored = MOCK_ORDERS.find(o=>o.id===lastOrder.id);
+  if(stored){ stored.paymentStatus = 'paid'; stored.methodName = methodName; }
+  const inv = INVOICES.find(i=>i.id === 'INV-'+lastOrder.id.replace('ORD-',''));
+  if(inv) inv.status = 'paid';
+  closeModal('paymentMethodModal');
+  renderInvoices();
+  alert(`Payment of ${lastOrder.total} settled via ${methodName}. Invoice #${inv?inv.id:''} is now marked as paid.`);
+}
+
+/* ---- call (driver or supplier) ---- */
+let currentCallContact = DRIVER_INFO;
+function openCallModal(contact){
+  currentCallContact = contact;
+  document.getElementById('callModalTitle').textContent = 'Call ' + contact.name;
+  document.getElementById('driverPhoneLabel').textContent = contact.phone ? ('Opens dialer with ' + contact.phone) : 'No phone number on file';
+  openModal('callModal');
+}
+function callOnNexa(){
+  closeModal('callModal');
+  alert(`Calling ${currentCallContact.name} on Nexa... (in-app voice call connecting)`);
+}
+function callOnPhone(){
+  closeModal('callModal');
+  if(!currentCallContact.phone){ alert('No phone number on file for ' + currentCallContact.name + '.'); return; }
+  window.location.href = 'tel:' + currentCallContact.phone.replace(/\s+/g,'');
+}
+document.getElementById('driverPhoneLabel').textContent = 'Opens dialer with ' + DRIVER_INFO.phone;
+
+let selectedDefaultPM = 'ecocash';
+function renderSettingsPayments(){
+  document.getElementById('settingsPaymentMethods').innerHTML = `
+    <div class="pm-select-grid">
+      ${PAYMENT_METHODS.map(m=>`
+        <div class="pm-select-card ${selectedDefaultPM===m.id?'selected':''}" onclick="selectedDefaultPM='${m.id}'; renderSettingsPayments();">
+          <i class="fa-solid ${m.icon}"></i>
+          <div class="pmt">${m.name}</div>
+          <div class="pms">${m.desc}</div>
+          ${selectedDefaultPM===m.id ? '<span class="pmdefault">Default</span>' : ''}
+        </div>`).join('')}
+    </div>
+    <button class="btn btn-primary" onclick="alert('Payment method preferences saved.')"><i class="fa-solid fa-check"></i> Save changes</button>
+  `;
+}
+renderSettingsPayments();
+
+/* ---- pharmacy chat room ---- */
+function sendRoomMsg(){
+  const input = document.getElementById('roomChatInput');
+  if(!input.value.trim()) return;
+  document.getElementById('roomChatBody').insertAdjacentHTML('beforeend',
+    `<div class="msg out">${input.value}<div class="meta">Just now</div></div>`);
+  input.value='';
+  document.getElementById('roomChatBody').scrollTop = 9999;
+}
+document.getElementById('roomChatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendRoomMsg(); });
+
+/* =========================================================================
+   AI ASSISTANT — scoped strictly to this pharmacist's own data
+   Uses Puter.js's built-in AI (puter.ai.chat), which authenticates the
+   user in-browser — no API key is embedded in this file. When your
+   backend is ready, swap PHARMACY_CONTEXT below for a real API response
+   and/or route this call through your own server if you want to use a
+   different or fine-tuned model.
+   ========================================================================= */
+
+// Replace this with a live snapshot fetched from your backend for the logged-in pharmacy.
+// It now mirrors everything the app itself knows about, so the assistant can talk about
+// any feature, not just inventory: stock, orders, suppliers, delivery options, payment
+// methods, and account/settings info.
+const PHARMACY_CONTEXT = {
+  pharmacy: "City Pharmacy, Harare",
+  low_stock: [
+    {name:"Amoxicillin 500mg", qty:12, days_left:4},
+    {name:"ORS Sachets", qty:80, days_left:9},
+    {name:"Atorvastatin 20mg", qty:40, days_left:11},
+  ],
+  orders: MOCK_ORDERS,
+  suppliers_available_now: MOCK_SUPPLIERS,
+  supplier_on_time_performance: [
+    {name:"ZimDrug Distributors", on_time_pct:91},
+    {name:"MedPharm Wholesale", on_time_pct:95},
+    {name:"HealthLink Suppliers", on_time_pct:78},
+  ],
+  product_catalogue: CATALOGUE_ITEMS,
+  smart_procurement_suggestions: PROCUREMENT_ITEMS,
+  supplier_applications: APPLICATIONS,
+  invoices: INVOICES,
+  payment_methods: PAYMENT_METHODS,
+  default_payment_method: selectedDefaultPM,
+  driver_on_current_delivery: DRIVER_INFO,
+};
+
+const AI_SYSTEM_PROMPT = `You are the NexaHealth Assistant, embedded inside this pharmacist's NexaHealth dashboard.
+You can help with absolutely anything inside the NexaHealth app for this account, across every section: the
+dashboard and stock-out predictions, Search & Order and comparing supplier prices/delivery/speed, the Product
+Catalogue (batch numbers, generic names, expiry dates), Smart Procurement reorder suggestions, My Orders and
+Delivery Tracking, Applications (requests to trade with new suppliers), Invoices (status, amounts, payment),
+the Pharmacy Chat Room, payment methods (EcoCash, OneMoney, Telecash, ZIPIT, Mukuru, bank transfer, card) and
+which is set as default, pay-now vs pay-after-delivery, and Settings (profile, MCAZ licence, notifications,
+staff/user roles). Use the JSON context below, which reflects this pharmacy's real data in the app, to answer
+accurately — especially for price/supplier comparisons, where you should weigh price, delivery fee, and speed
+together rather than just the lowest unit price.
+Respond in a professional, courteous tone, the way a knowledgeable pharmacy operations assistant would.
+Stay 100% scoped to this app and this pharmacy's own account. Do not answer anything unrelated to NexaHealth —
+no general medical diagnoses for patients, no topics with no connection to the platform, no other pharmacy's
+private data, no general-purpose chit-chat. If asked something outside that scope, politely decline in one
+sentence and redirect to what you can help with here. Never invent data that isn't in the context or reasonably
+inferable from it. Keep answers concise, concrete, and practical.
+CONTEXT: ${JSON.stringify(PHARMACY_CONTEXT)}`;
+
+/* ---- voice input (Web Speech API) ---- */
+let voiceRecognition = null;
+let isRecording = false;
+function toggleVoiceInput(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    alert("Voice input isn't supported in this browser. Try Chrome or Edge, or type your question instead.");
+    return;
+  }
+  const btn = document.getElementById('voiceBtn');
+  if(isRecording){
+    voiceRecognition && voiceRecognition.stop();
+    return;
+  }
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.lang = 'en-US';
+  voiceRecognition.interimResults = false;
+  voiceRecognition.maxAlternatives = 1;
+  voiceRecognition.onstart = ()=>{ isRecording = true; btn.classList.add('recording'); };
+  voiceRecognition.onend = ()=>{ isRecording = false; btn.classList.remove('recording'); };
+  voiceRecognition.onerror = ()=>{ isRecording = false; btn.classList.remove('recording'); };
+  voiceRecognition.onresult = (e)=>{
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('aiChatInput').value = transcript;
+    sendAiMsg();
+  };
+  voiceRecognition.start();
+}
+
+function appendAiMsg(role, text){
+  const cls = role==='user' ? 'out' : 'ai';
+  document.getElementById('aiChatBody').insertAdjacentHTML('beforeend', `<div class="msg ${cls}">${text}</div>`);
+  document.getElementById('aiChatBody').scrollTop = 9999;
+}
+
+async function sendAiMsg(){
+  const input = document.getElementById('aiChatInput');
+  const q = input.value.trim();
+  if(!q) return;
+  appendAiMsg('user', q);
+  input.value = '';
+  appendAiMsg('ai', '<em>Thinking…</em>');
+  const thinkingNode = document.getElementById('aiChatBody').lastElementChild;
+
+  try{
+    if(window.puter && puter.ai && puter.ai.chat){
+      const resp = await puter.ai.chat([
+        {role:'system', content: AI_SYSTEM_PROMPT},
+        {role:'user', content: q}
+      ]);
+      thinkingNode.innerHTML = (resp?.message?.content || resp?.toString?.() || "Sorry, I couldn't process that.");
+    } else {
+      thinkingNode.innerHTML = "AI service isn't connected yet — once your backend/Gemini integration is live, this will respond using your pharmacy's real data.";
+    }
+  }catch(err){
+    thinkingNode.innerHTML = "I couldn't reach the AI service just now. Please try again in a moment.";
+  }
+}
+document.getElementById('aiChatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendAiMsg(); });
+
+/* ---- Mapbox ---- */
+// Add your own Mapbox public token here (kept separate from any backend/auth secrets)
+mapboxgl.accessToken = 'YOUR_MAPBOX_PUBLIC_TOKEN';
+let mapInstance = null;
+function initMap(){
+  if(mapInstance || !document.getElementById('map')) return;
+  try{
+    mapInstance = new mapboxgl.Map({
+      container:'map',
+      style:'mapbox://styles/mapbox/light-v11',
+      center:[31.0335, -17.8292], // Harare
+      zoom:12
+    });
+    mapInstance.addControl(new mapboxgl.NavigationControl());
+
+    const truckEl = document.createElement('div');
+    truckEl.innerHTML = '🚚';
+    truckEl.style.fontSize = '26px';
+    const truckMarker = new mapboxgl.Marker(truckEl).setLngLat([31.06,-17.84]).addTo(mapInstance);
+    const destMarker = new mapboxgl.Marker({color:'#0088cc'}).setLngLat([31.0335,-17.8292]).addTo(mapInstance);
+
+    // Simulated live position updates — replace with real WebSocket coordinates from your driver app
+    let step = 0;
+    setInterval(()=>{
+      step += 0.002;
+      const lng = 31.06 - step, lat = -17.84 + step*0.5;
+      truckMarker.setLngLat([lng, lat]);
+    }, 1500);
+  }catch(e){ /* Mapbox token not set yet */ }
+}
+
+/* ---- Analytics (lightweight, dependency-free charts) ---- */
+function renderAnalytics(){
+  const months = [['Feb',18],['Mar',24],['Apr',20],['May',31],['Jun',27],['Jul',35]];
+  const max = Math.max(...months.map(m=>m[1]));
+  document.getElementById('ordersBarChart').innerHTML = months.map(([m,v])=>`
+    <div class="bar-col"><div class="bar" style="height:${(v/max*100)}%"></div><div class="bl">${m}</div></div>`).join('');
+
+  const topSelling = [
+    {name:'Amoxicillin 500mg', units:124},
+    {name:'Paracetamol 500mg', units:98},
+    {name:'ORS Sachets', units:76},
+    {name:'Atorvastatin 20mg', units:52},
+  ];
+  document.getElementById('topSellingList').innerHTML = topSelling.map(t=>`
+    <div class="alert-row"><div class="alert-text" style="flex:1;"><div class="t1">${t.name}</div></div><div style="font-weight:700; color:var(--primary-dark);">${t.units} units</div></div>`).join('');
+
+  const perf = [
+    {name:'MedPharm Wholesale', pct:95, color:'#16a34a'},
+    {name:'ZimDrug Distributors', pct:91, color:'#0088cc'},
+    {name:'HealthLink Suppliers', pct:78, color:'#f59e0b'},
+    {name:'PharmaCorp Zimbabwe', pct:66, color:'#dc2626'},
+  ];
+  document.getElementById('supplierPerf').innerHTML = perf.map(p=>`
+    <div class="supplier-perf-row">
+      <div class="sp-name">${p.name}</div>
+      <div class="sp-bar-bg"><div class="sp-bar-fill" style="width:${p.pct}%; background:${p.color}"></div></div>
+      <div class="sp-pct">${p.pct}%</div>
+    </div>`).join('');
+
+  const donutData = [{l:'Amoxicillin',v:34,c:'#0088cc'},{l:'Paracetamol',v:28,c:'#00b8f0'},{l:'ORS Sachets',v:20,c:'#7fd4ec'},{l:'Other',v:18,c:'#d6ecf9'}];
+  let acc=0;
+  const gradient = donutData.map(d=>{ const start=acc; acc+=d.v; return `${d.c} ${start}% ${acc}%`; }).join(',');
+  document.getElementById('topMedDonut').style.background = `conic-gradient(${gradient})`;
+  document.getElementById('donutLegend').innerHTML = donutData.map(d=>`
+    <div class="legend-item"><span class="legend-dot" style="background:${d.c}"></span>${d.l} — ${d.v}%</div>`).join('');
+}
+</script>
+</body>
+</html>
