@@ -10,7 +10,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
-<script src="https://js.puter.com/v2/"></script>
 
 <style>
 :root{
@@ -23,10 +22,19 @@
   --shadow-lg:0 8px 30px rgba(11,43,68,.12); --sidebar-w:252px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
+button, a, .nav-item, .qa-card, .chat-list-item, .app-card, [onclick],
+.btn, .link-action, .badge-dot, .cart-fab, .icon-btn, .stat-card[onclick],
+.upload-box, .toggle-pass, .logout, select, .filter-chip, .sort-btn {
+  cursor: pointer;
+}
+input[type="text"], input[type="email"], input[type="password"], input[type="tel"],
+input[type="number"], input[type="date"], textarea {
+  cursor: text;
+}
 body{font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); font-size:14.5px; -webkit-font-smoothing:antialiased;}
 a{text-decoration:none; color:inherit;} button{font-family:inherit; cursor:pointer; border:none; background:none;} ul{list-style:none;}
 ::-webkit-scrollbar{width:8px; height:8px;} ::-webkit-scrollbar-thumb{background:#cbd8e2; border-radius:8px;}
-.app{display:flex; min-height:100vh;}
+.app{display:flex; height:100vh; overflow:hidden;}
 
 .sidebar{width:var(--sidebar-w); background:var(--primary-dark); color:#cfe3f0; position:fixed; top:0; left:0; bottom:0; display:flex; flex-direction:column; z-index:100; transition:transform .25s ease;}
 .sidebar-brand{display:flex; align-items:center; gap:10px; padding:22px 20px; border-bottom:1px solid rgba(255,255,255,.08);}
@@ -45,7 +53,7 @@ a{text-decoration:none; color:inherit;} button{font-family:inherit; cursor:point
 .sidebar-foot .who{font-size:13px; color:#fff; font-weight:600; line-height:1.2;} .sidebar-foot .sub{font-size:11.5px; color:#7fa8c2;}
 .sidebar-foot .logout{margin-left:auto; color:#7fa8c2; font-size:15px;} .sidebar-foot .logout:hover{color:#fff;}
 
-.main{margin-left:var(--sidebar-w); flex:1; min-width:0; display:flex; flex-direction:column;}
+.main{margin-left:var(--sidebar-w); flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; overflow:hidden;}
 .topbar{height:68px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; padding:0 26px; position:sticky; top:0; z-index:50;}
 .menu-toggle{display:none; font-size:18px; color:var(--text-mut);}
 .page-title{font-size:18px; font-weight:700; color:var(--primary-dark);} .page-sub{font-size:12.5px; color:var(--text-mut); margin-top:1px;}
@@ -55,9 +63,19 @@ a{text-decoration:none; color:inherit;} button{font-family:inherit; cursor:point
 .icon-btn{width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--text-mut); font-size:16px; position:relative; transition:background .15s;}
 .icon-btn:hover{background:var(--bg);}
 .icon-btn .dot{position:absolute; top:7px; right:8px; width:8px; height:8px; border-radius:50%; background:var(--danger); border:2px solid var(--surface);}
+.topbar-dropdown{display:none; position:absolute; top:calc(100% + 10px); right:0; width:320px; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.14); z-index:200; overflow:hidden;}
+.topbar-dropdown.show{display:block;}
+.topbar-dropdown .td-head{padding:14px 18px; font-weight:700; font-size:13.5px; border-bottom:1px solid var(--border); color:var(--primary-dark);}
+.topbar-dropdown .td-body{max-height:320px; overflow-y:auto;}
+.topbar-dropdown .td-empty{padding:30px 18px; text-align:center; color:var(--text-mut); font-size:13px;}
+.topbar-dropdown .td-item{padding:12px 18px; border-bottom:1px solid var(--border); font-size:13px; cursor:pointer;}
+.topbar-dropdown .td-item:hover{background:var(--bg);}
+.topbar-dropdown .td-item:last-child{border-bottom:none;}
+.topbar-dropdown .td-item .td-title{font-weight:600; color:var(--text);}
+.topbar-dropdown .td-item .td-sub{color:var(--text-mut); font-size:12px; margin-top:2px;}
 .topbar-profile{display:flex; align-items:center; gap:10px; padding-left:12px; border-left:1px solid var(--border);}
 .topbar-profile .name{font-size:13.5px; font-weight:600;} .topbar-profile .pharmacy{font-size:11.5px; color:var(--text-mut);}
-.content{padding:26px; flex:1;}
+.content{padding:26px; flex:1; overflow-y:auto; min-height:0;}
 .view{display:none;} .view.active{display:block; animation:fadeIn .25s ease;}
 @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
 
@@ -81,6 +99,7 @@ a{text-decoration:none; color:inherit;} button{font-family:inherit; cursor:point
 .panel-body{padding:22px;}
 .link-action{color:var(--primary); font-size:12.5px; font-weight:600;} .link-action:hover{text-decoration:underline;}
 .two-col{display:grid; grid-template-columns:1.6fr 1fr; gap:22px;}
+.chat-mini-note{padding:14px 20px; font-size:12.5px; color:var(--text-mut); border-bottom:1px solid var(--border); flex-shrink:0;}
 
 .alert-row{display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--border);} .alert-row:last-child{border-bottom:none;}
 .alert-ico{width:34px; height:34px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px;}
@@ -159,8 +178,8 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
 .chat-list-item{padding:14px 18px; border-bottom:1px solid var(--border); cursor:pointer;}
 .chat-list-item.active{background:var(--primary-light);}
 .chat-list-item .cn{font-size:13.5px; font-weight:600;} .chat-list-item .cm{font-size:12px; color:var(--text-mut); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.chat-main{display:flex; flex-direction:column;}
-.chat-head{padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;}
+.chat-main{display:flex; flex-direction:column; min-height:0; height:100%;}
+.chat-head{padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0;}
 .chat-head .t{font-size:13.5px; font-weight:700;} .chat-head .s{font-size:11.5px; color:var(--text-mut);}
 .chat-body{flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px;}
 .msg{max-width:70%; padding:10px 14px; border-radius:14px; font-size:13.5px; line-height:1.45;}
@@ -168,7 +187,7 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
 .msg.out{background:var(--primary); color:#fff; border-bottom-right-radius:4px; align-self:flex-end;}
 .msg.ai{background:var(--primary-light); border-bottom-left-radius:4px; align-self:flex-start; color:var(--primary-dark);}
 .msg .meta{font-size:10px; opacity:.65; margin-top:5px;}
-.chat-input{padding:14px 18px; border-top:1px solid var(--border); display:flex; gap:10px;}
+.chat-input{padding:14px 18px; border-top:1px solid var(--border); display:flex; gap:10px; flex-shrink:0;}
 .chat-input input{flex:1; border:1px solid var(--border); border-radius:10px; padding:11px 14px; outline:none; font-size:13.5px;}
 .chat-input button{width:42px; height:42px; background:var(--primary); color:#fff; border-radius:10px;}
 .ai-scope-note{background:var(--primary-light); color:var(--primary-dark); font-size:11.5px; padding:9px 14px; display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--border);}
@@ -230,7 +249,7 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
       <a class="nav-item" data-view="promotions"><i class="fa-solid fa-bullhorn"></i> Promotions &amp; Ads</a>
 
       <div class="group-label">Sales</div>
-      <a class="nav-item" data-view="orders"><i class="fa-solid fa-receipt"></i> Incoming Orders <span class="badge-dot">4</span></a>
+      <a class="nav-item" data-view="orders"><i class="fa-solid fa-receipt"></i> Incoming Orders <span class="badge-dot" id="navOrdersBadge" style="display:none;">0</span></a>
       <a class="nav-item" data-view="map"><i class="fa-solid fa-map-location-dot"></i> Deliveries Map</a>
       <a class="nav-item" data-view="payments"><i class="fa-solid fa-file-invoice-dollar"></i> Payments &amp; Statements</a>
 
@@ -243,9 +262,9 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
       <a class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i> Settings</a>
     </nav>
     <div class="sidebar-foot">
-      <div class="avatar-sm">MP</div>
-      <div><div class="who">MedPharm Wholesale</div><div class="sub">Workington, Harare</div></div>
-      <i class="fa-solid fa-right-from-bracket logout"></i>
+      <div class="avatar-sm" id="sidebarAvatar">--</div>
+      <div><div class="who" id="sidebarUserName">Loading...</div><div class="sub" id="sidebarUserBiz">—</div></div>
+      <i class="fa-solid fa-right-from-bracket logout" onclick="handleLogout()"></i>
     </div>
   </aside>
 
@@ -255,9 +274,21 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
       <div><div class="page-title" id="pageTitle">Dashboard</div><div class="page-sub" id="pageSub">Here's how your business is doing today</div></div>
       <div class="topbar-search"><i class="fa-solid fa-magnifying-glass"></i><input type="text" placeholder="Search products, orders, pharmacies..."></div>
       <div class="topbar-actions">
-        <div class="icon-btn"><i class="fa-regular fa-bell"></i><span class="dot"></span></div>
-        <div class="icon-btn"><i class="fa-regular fa-envelope"></i></div>
-        <div class="topbar-profile"><div class="avatar-sm">MP</div><div><div class="name">MedPharm Wholesale</div><div class="pharmacy">Verified Wholesaler</div></div></div>
+        <div class="icon-btn-wrap" style="position:relative;">
+          <div class="icon-btn" onclick="toggleDropdown('notifDropdown')"><i class="fa-regular fa-bell"></i><span class="dot" id="notifDot" style="display:none;"></span></div>
+          <div class="topbar-dropdown" id="notifDropdown">
+            <div class="td-head">Notifications</div>
+            <div class="td-body" id="notifDropdownBody"><div class="td-empty">👉 No notifications yet</div></div>
+          </div>
+        </div>
+        <div class="icon-btn-wrap" style="position:relative;">
+          <div class="icon-btn" onclick="toggleDropdown('msgDropdown')"><i class="fa-regular fa-envelope"></i><span class="dot" id="msgDot" style="display:none;"></span></div>
+          <div class="topbar-dropdown" id="msgDropdown">
+            <div class="td-head">Messages</div>
+            <div class="td-body" id="msgDropdownBody"><div class="td-empty">👉 No messages yet</div></div>
+          </div>
+        </div>
+        <div class="topbar-profile"><div class="avatar-sm" id="topbarAvatar">--</div><div><div class="name" id="topbarUserName">Loading...</div><div class="pharmacy" id="topbarUserBiz">—</div></div></div>
       </div>
     </header>
 
@@ -266,10 +297,10 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
       <!-- DASHBOARD -->
       <section class="view active" id="view-dashboard">
         <div class="stats-grid">
-          <div class="stat-card"><div class="top"><div class="icon-wrap blue"><i class="fa-solid fa-cart-shopping"></i></div></div><div class="value">4</div><div class="label">New orders today</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 2 more than yesterday</div></div>
-          <div class="stat-card"><div class="top"><div class="icon-wrap green"><i class="fa-solid fa-sack-dollar"></i></div></div><div class="value">$18,420</div><div class="label">Revenue this month</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 12% vs last month</div></div>
-          <div class="stat-card"><div class="top"><div class="icon-wrap amber"><i class="fa-solid fa-triangle-exclamation"></i></div></div><div class="value">6</div><div class="label">Products low/out of stock</div><div class="trend down"><i class="fa-solid fa-arrow-down"></i> Needs restock</div></div>
-          <div class="stat-card"><div class="top"><div class="icon-wrap navy"><i class="fa-solid fa-store"></i></div></div><div class="value">62</div><div class="label">Active pharmacy customers</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 5 new this month</div></div>
+          <div class="stat-card"><div class="top"><div class="icon-wrap blue"><i class="fa-solid fa-cart-shopping"></i></div></div><div class="value" id="statNewOrders">0</div><div class="label">New orders today</div><div class="trend flat" id="statOrdersTrend">No data yet</div></div>
+          <div class="stat-card"><div class="top"><div class="icon-wrap green"><i class="fa-solid fa-sack-dollar"></i></div></div><div class="value" id="statRevenue">$0</div><div class="label">Revenue this month</div><div class="trend flat" id="statRevenueTrend">No data yet</div></div>
+          <div class="stat-card"><div class="top"><div class="icon-wrap amber"><i class="fa-solid fa-triangle-exclamation"></i></div></div><div class="value" id="statLowStock">0</div><div class="label">Products low/out of stock</div><div class="trend flat" id="statLowStockTrend">No data yet</div></div>
+          <div class="stat-card"><div class="top"><div class="icon-wrap navy"><i class="fa-solid fa-store"></i></div></div><div class="value" id="statCustomers">0</div><div class="label">Active pharmacy customers</div><div class="trend flat" id="statCustomersTrend">No data yet</div></div>
         </div>
 
         <div class="panel">
@@ -277,7 +308,7 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
           <div class="panel-body">
             <div class="quick-actions">
               <button class="qa-card" onclick="goTo('inventory')"><i class="fa-solid fa-file-arrow-up"></i><div class="t">Update today's pricelist</div><div class="s">Upload Excel or edit manually</div></button>
-              <button class="qa-card" onclick="goTo('orders')"><i class="fa-solid fa-box-open"></i><div class="t">Confirm new orders</div><div class="s">4 awaiting confirmation</div></button>
+              <button class="qa-card" onclick="goTo('orders')"><i class="fa-solid fa-box-open"></i><div class="t">Confirm new orders</div><div class="s" id="qaOrdersText">View incoming orders</div></button>
               <button class="qa-card" onclick="goTo('promotions')"><i class="fa-solid fa-bullhorn"></i><div class="t">Launch a promotion</div><div class="s">Visible to pharmacies only</div></button>
               <button class="qa-card" onclick="goTo('assistant')"><i class="fa-solid fa-sparkles"></i><div class="t">Ask the AI Assistant</div><div class="s">Sales &amp; stock questions</div></button>
             </div>
@@ -295,9 +326,10 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
           <div class="panel">
             <div class="panel-head"><div><h3>Alerts</h3></div></div>
             <div class="panel-body">
-              <div class="alert-row"><div class="alert-ico warn"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="alert-text"><div class="t1">Amoxicillin 500mg is almost out</div><div class="t2">180 units left — hidden from buyers below 50</div></div></div>
-              <div class="alert-row"><div class="alert-ico info"><i class="fa-solid fa-clock"></i></div><div class="alert-text"><div class="t1">3 pharmacies have overdue payments</div><div class="t2">Total outstanding: $1,240</div></div></div>
-              <div class="alert-row"><div class="alert-ico danger"><i class="fa-solid fa-ban"></i></div><div class="alert-text"><div class="t1">Recall notice sent</div><div class="t2">Batch #A2201 — 14 pharmacies notified</div></div></div>
+              <div id="dashAlertsBody" style="text-align:center; color:var(--text-mut); padding:20px 16px;">
+                <div style="font-size:26px; margin-bottom:10px;">👉</div>
+                No alerts yet — this fills up automatically once you have orders, stock, and payments.
+              </div>
             </div>
           </div>
         </div>
@@ -408,7 +440,8 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
       <!-- MESSAGES -->
       <section class="view" id="view-messages">
         <div class="panel">
-          <div class="panel-head"><div><h3>Messages</h3><div class="sub">Talk directly with pharmacies — delays, complaints, recalls</div></div>
+          <div class="chat-mini-note" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Talk directly with pharmacies — delays, complaints, recalls</span>
             <button class="btn btn-outline btn-sm" onclick="openModal('recallModal')"><i class="fa-solid fa-bullhorn"></i> Broadcast recall</button>
           </div>
           <div class="chat-shell">
@@ -429,8 +462,7 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
       <!-- AI ASSISTANT -->
       <section class="view" id="view-assistant">
         <div class="panel">
-          <div class="panel-head"><div><h3>NexaHealth AI Assistant</h3><div class="sub">Scoped to your business data on NexaHealth</div></div></div>
-          <div class="chat-shell" style="grid-template-columns:1fr;">
+                    <div class="chat-shell" style="grid-template-columns:1fr;">
             <div class="chat-main">
               <div class="ai-scope-note"><i class="fa-solid fa-circle-info"></i> Ask about your orders, stock, pricing, promotions, payments, or analytics — anything inside your NexaHealth account.</div>
               <div class="chat-body" id="aiChatBody">
@@ -559,45 +591,156 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
 
 <script>
 /* =========================================================================
-   MOCK DATA — replace with real API calls to your backend.
+   NEXAHEALTH REAL API CLIENT
+   Connects to your live backend. PRODUCTS and ORDERS below are populated
+   from real data on page load via loadRealData().
    ========================================================================= */
-const PRODUCTS = [
-  {name:'Amoxicillin 500mg', price:0.28, wasPrice:0.34, qty:180, delivery:'free', fee:0, images:[]},
-  {name:'Paracetamol 500mg', price:0.45, qty:6000, delivery:'paid', fee:5, images:[]},
-  {name:'ORS Sachets', price:0.30, qty:0, delivery:'none', fee:0, images:[]},
-  {name:'Cetirizine 10mg', price:0.19, qty:2200, delivery:'free', fee:0, images:[]},
-];
+const API_BASE = window.location.origin + '/api';
+function getAuthToken(){ return localStorage.getItem('nexa_token'); }
+function getCurrentUser(){ try{ return JSON.parse(localStorage.getItem('nexa_user')||'{}'); }catch{ return {}; } }
 
-const ORDERS = [
-  {id:'ORD-1042', pharmacy:'City Pharmacy', items:'Amoxicillin 500mg ×500', total:'$225.00', payment:'Pay on delivery', status:'transit'},
-  {id:'ORD-1044', pharmacy:'Greenwood Pharmacy', items:'Cetirizine 10mg ×1000, +100 free', total:'$190.00', payment:'Paid — EcoCash', status:'pending'},
-  {id:'ORD-1045', pharmacy:'Sunrise Pharmacy', items:'Paracetamol 500mg ×2000', total:'$900.00', payment:'Paid — ZIPIT', status:'pending'},
-  {id:'ORD-1046', pharmacy:'Wellcare Pharmacy', items:'Amoxicillin 500mg ×300', total:'$84.00', payment:'Pay on delivery', status:'confirmed'},
-];
+async function apiRequest(path, options = {}) {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  if (res.status === 401) {
+    localStorage.removeItem('nexa_token');
+    localStorage.removeItem('nexa_user');
+    window.location.href = '/';
+    return null;
+  }
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) { console.error(`API error [${path}]:`, data.message || res.statusText); throw new Error(data.message || 'Request failed.'); }
+  return data;
+}
+
+async function fetchMyOrders(){ const d = await apiRequest('/orders'); return d?.orders || []; }
+async function fetchMyProducts(){ const d = await apiRequest('/products/mine'); return d?.products || []; }
+async function confirmOrderReal(orderId){ return apiRequest(`/orders/${orderId}/status`, {method:'PATCH', body: JSON.stringify({status:'confirmed'})}); }
+
+/* Map a real backend Order document to the exact shape orderRow() expects */
+function mapRealOrderToUiShape(o){
+  const itemsText = (o.items||[]).map(it=>`${it.name} ×${it.quantity}`).join(', ');
+  const statusMap = { pending:'pending', confirmed:'confirmed', preparing:'confirmed', dispatched:'transit', delivered:'delivered', cancelled:'pending', rejected:'pending' };
+  return {
+    id: o.orderNumber,
+    _realId: o._id,
+    pharmacy: o.pharmacy?.businessName || o.pharmacy?.fullName || 'Pharmacy',
+    items: itemsText || '—',
+    total: '$' + Number(o.total||0).toFixed(2),
+    payment: o.paymentStatus === 'paid' ? `Paid — ${o.paymentMethod || 'Online'}` : 'Pay on delivery',
+    status: statusMap[o.status] || 'pending',
+    date: o.createdAt,
+  };
+}
+
+/* Map a real backend Product document to the exact shape productRow() expects */
+function mapRealProductToUiShape(p){
+  return {
+    _realId: p._id,
+    name: p.name,
+    price: p.pricePerUnit,
+    wasPrice: p.isPromo ? p.promoPrice : null,
+    qty: p.stockQuantity,
+    delivery: p.deliveryOption === 'free' ? 'free' : p.deliveryOption === 'pickup_only' ? 'none' : 'paid',
+    fee: p.deliveryFee || 0,
+    images: p.images || [],
+  };
+}
+
+async function loadRealData(){
+  try {
+    const [realOrders, realProducts] = await Promise.all([
+      fetchMyOrders().catch(()=>[]),
+      fetchMyProducts().catch(()=>[]),
+    ]);
+
+    if (realOrders.length) {
+      ORDERS.length = 0;
+      realOrders.forEach(o => ORDERS.push(mapRealOrderToUiShape(o)));
+    }
+    if (realProducts.length) {
+      PRODUCTS.length = 0;
+      realProducts.forEach(p => PRODUCTS.push(mapRealProductToUiShape(p)));
+    }
+
+    if (typeof renderOrders === 'function') renderOrders();
+    if (typeof renderProducts === 'function') renderProducts();
+    if (typeof populateRecallProducts === 'function') populateRecallProducts();
+    if (typeof populateDropdowns === 'function') populateDropdowns();
+  } catch (err) {
+    console.error('Failed to load real data, dashboard is showing empty state as fallback:', err.message);
+  }
+}
+
+function initials(name){
+  if(!name) return '--';
+  return name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+}
+function handleLogout(){
+  localStorage.removeItem('nexa_token');
+  localStorage.removeItem('nexa_user');
+  window.location.href = '/';
+}
+function toggleDropdown(id){
+  const el = document.getElementById(id);
+  const isOpen = el.classList.contains('show');
+  document.querySelectorAll('.topbar-dropdown').forEach(d=>d.classList.remove('show'));
+  if(!isOpen) el.classList.add('show');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.icon-btn-wrap')){
+    document.querySelectorAll('.topbar-dropdown').forEach(d=>d.classList.remove('show'));
+  }
+});
+function populateDropdowns(){
+  const notifs = [];
+  const pendingOrders = ORDERS.filter(o=>o.status==='pending').length;
+  const dueBalances = BALANCES.filter(b=>b.status!=='ok').length;
+  if(pendingOrders) notifs.push({title:`${pendingOrders} order(s) awaiting confirmation`, sub:'Tap to view orders', action:"goTo('orders')"});
+  if(dueBalances) notifs.push({title:`${dueBalances} balance(s) need attention`, sub:'Tap to view payments', action:"goTo('payments')"});
+
+  const notifBody = document.getElementById('notifDropdownBody');
+  const notifDot = document.getElementById('notifDot');
+  if(notifs.length){
+    notifBody.innerHTML = notifs.map(n=>`<div class="td-item" onclick="${n.action}; toggleDropdown('notifDropdown');"><div class="td-title">${n.title}</div><div class="td-sub">${n.sub}</div></div>`).join('');
+    notifDot.style.display = 'block';
+  } else {
+    notifBody.innerHTML = `<div class="td-empty">👉 No notifications yet</div>`;
+    notifDot.style.display = 'none';
+  }
+
+  const names = Object.keys(PHARMACY_CHATS);
+  const msgBody = document.getElementById('msgDropdownBody');
+  const msgDot = document.getElementById('msgDot');
+  if(names.length){
+    msgBody.innerHTML = names.map(name=>`<div class="td-item" onclick="goTo('messages'); openPharmacyChat('${name.replace(/'/g,"\\'")}'); toggleDropdown('msgDropdown');"><div class="td-title">${name}</div><div class="td-sub">${lastPharmacyMsg(name)}</div></div>`).join('');
+  } else {
+    msgBody.innerHTML = `<div class="td-empty">👉 No messages yet</div>`;
+  }
+  msgDot.style.display = 'none';
+}
+
+/* =========================================================================
+   MOCK DATA — emptied for MVP. Real data populates via loadRealData().
+   ========================================================================= */
+const PRODUCTS = []; // MVP: real products load via loadRealData() from your live catalogue — none until you add stock
+
+const ORDERS = []; // MVP: real orders load via loadRealData() — none until a pharmacy orders from you
 
 // Connected pharmacy customers — used for Messages, the Deliveries Map, and targeted recalls
-const PHARMACY_CHATS = {
-  'City Pharmacy': {phone:'+263 71 234 5678', lat:-17.8292, lng:31.0335,
-    messages:[{dir:'in', text:'When will ORD-1042 arrive?', time:'9:40 AM'}, {dir:'out', text:"It's on the truck now, ETA 12 minutes.", time:'9:42 AM'}]},
-  'Greenwood Pharmacy': {phone:'+263 77 555 1122', lat:-17.8420, lng:31.0510,
-    messages:[{dir:'in', text:'Thanks for the quick delivery!', time:'Yesterday'}]},
-  'Sunrise Pharmacy': {phone:'+263 78 222 9090', lat:-17.8105, lng:31.0225,
-    messages:[{dir:'in', text:'Product complaint - batch A2201', time:'2 days ago'}]},
-  'Wellcare Pharmacy': {phone:'+263 77 888 3344', lat:-17.8355, lng:31.0630,
-    messages:[]},
-};
-let currentPharmacyChat = 'City Pharmacy';
+const PHARMACY_CHATS = {}; // MVP: real pharmacy conversations load once you have connected pharmacy customers
+let currentPharmacyChat = null;
 
-const BALANCES = [
-  {pharmacy:'Sunrise Pharmacy', amount:'$420.00', due:'Jul 10, 2026', status:'pending'},
-  {pharmacy:'Wellcare Pharmacy', amount:'$610.00', due:'Jul 8, 2026', status:'low'},
-  {pharmacy:'Greenwood Pharmacy', amount:'$210.00', due:'Jul 15, 2026', status:'ok'},
-];
+const BALANCES = []; // MVP: real outstanding balances are derived from real unpaid orders
 
-const PROMOTIONS = [
-  {title:'Buy 1000 Cetirizine, get 100 free', desc:'Valid on all Cetirizine 10mg orders above 1000 units.', views:340, redemptions:28},
-  {title:'10% off Amoxicillin this week', desc:'Automatic discount applied at checkout.', views:512, redemptions:64},
-];
+const PROMOTIONS = []; // MVP: real promotions you create appear here — none by default
 
 const businessLabel = {pending:'Pending', confirmed:'Confirmed', transit:'In Transit', delivered:'Delivered'};
 
@@ -609,9 +752,12 @@ function orderRow(o){
     <td>${o.status==='pending' ? `<button class="btn btn-primary btn-sm" onclick="confirmOrder('${o.id}')">Confirm</button>` : `<a class="link-action">Print invoice</a>`}</td>
   </tr>`;
 }
+function ordersEmptyRow(colspan){
+  return `<tr><td colspan="${colspan}" style="text-align:center; color:var(--text-mut); padding:30px;">No orders yet — orders from pharmacies will appear here.</td></tr>`;
+}
 function renderOrders(){
-  document.getElementById('dashOrdersBody').innerHTML = ORDERS.slice(0,4).map(o=>orderRow(o)).join('');
-  document.getElementById('ordersBody').innerHTML = ORDERS.map(o=>orderRow(o)).join('');
+  document.getElementById('dashOrdersBody').innerHTML = ORDERS.length ? ORDERS.slice(0,4).map(o=>orderRow(o)).join('') : ordersEmptyRow(5);
+  document.getElementById('ordersBody').innerHTML = ORDERS.length ? ORDERS.map(o=>orderRow(o)).join('') : ordersEmptyRow(6);
 }
 renderOrders();
 
@@ -633,7 +779,11 @@ function productRow(p, i){
     <td><a class="link-action" onclick="openProductModal('edit', ${i})"><i class="fa-solid fa-pen"></i> Edit</a></td>
   </tr>`;
 }
-function renderProducts(){ document.getElementById('productsBody').innerHTML = PRODUCTS.map((p,i)=>productRow(p,i)).join(''); }
+function renderProducts(){
+  document.getElementById('productsBody').innerHTML = PRODUCTS.length
+    ? PRODUCTS.map((p,i)=>productRow(p,i)).join('')
+    : `<tr><td colspan="6" style="text-align:center; color:var(--text-mut); padding:30px;">No products listed yet — click "Add product" to list your first item.</td></tr>`;
+}
 renderProducts();
 
 /* ---- Add / Edit product (shared modal) ---- */
@@ -706,20 +856,27 @@ function promoCard(p){
   return `<div class="promo-card"><span class="ptag">Active</span><h4>${p.title}</h4><p>${p.desc}</p>
     <div class="pstats"><div><strong>${p.views}</strong>views</div><div><strong>${p.redemptions}</strong>redemptions</div></div></div>`;
 }
-document.getElementById('promoCards').innerHTML = PROMOTIONS.map(promoCard).join('');
+function renderPromoCards(){
+  document.getElementById('promoCards').innerHTML = PROMOTIONS.length
+    ? PROMOTIONS.map(promoCard).join('')
+    : `<div style="text-align:center; color:var(--text-mut); padding:40px 20px; grid-column:1/-1;"><div style="font-size:26px; margin-bottom:10px;">👉</div>No promotions yet — launch one to get visibility with pharmacies.</div>`;
+}
+renderPromoCards();
 function addPromo(){
   const title = document.getElementById('ppTitle').value.trim();
   const desc = document.getElementById('ppDesc').value.trim();
   if(!title) return;
   PROMOTIONS.unshift({title, desc, views:0, redemptions:0});
-  document.getElementById('promoCards').innerHTML = PROMOTIONS.map(promoCard).join('');
+  renderPromoCards();
   closeModal('addPromoModal');
 }
 
 function balanceRow(b){
   return `<tr><td>${b.pharmacy}</td><td>${b.amount}</td><td>${b.due}</td><td><span class="badge ${b.status}">${b.status==='ok'?'On track':b.status==='low'?'Due soon':'Overdue'}</span></td><td><a class="link-action" onclick="alert('Reminder sent to ${b.pharmacy}.')">Send reminder</a></td></tr>`;
 }
-document.getElementById('balancesBody').innerHTML = BALANCES.map(balanceRow).join('');
+document.getElementById('balancesBody').innerHTML = BALANCES.length
+  ? BALANCES.map(balanceRow).join('')
+  : `<tr><td colspan="5" style="text-align:center; color:var(--text-mut); padding:30px;">No outstanding balances yet.</td></tr>`;
 
 /* ---- nav ---- */
 const titles = {
@@ -742,7 +899,7 @@ function goTo(view){
   document.getElementById('sidebar').classList.remove('open');
   if(view==='analytics') setTimeout(renderAnalytics, 30);
   if(view==='map') setTimeout(initWholesalerMap, 50);
-  if(view==='messages'){ renderPharmacyChatList(); openPharmacyChat(currentPharmacyChat); }
+  if(view==='messages'){ renderPharmacyChatList(); openPharmacyChat(currentPharmacyChat || Object.keys(PHARMACY_CHATS)[0] || null); }
 }
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>goTo(n.dataset.view)));
 document.getElementById('menuToggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
@@ -752,22 +909,30 @@ function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 
 /* ---- messages (per-pharmacy chat) ---- */
 function lastPharmacyMsg(name){
-  const msgs = PHARMACY_CHATS[name].messages;
+  const msgs = PHARMACY_CHATS[name]?.messages || [];
   return msgs.length ? msgs[msgs.length-1].text : 'No messages yet';
 }
 function renderPharmacyChatList(){
-  document.getElementById('pharmacyChatList').innerHTML = Object.keys(PHARMACY_CHATS).map(name=>`
+  const names = Object.keys(PHARMACY_CHATS);
+  document.getElementById('pharmacyChatList').innerHTML = names.length ? names.map(name=>`
     <div class="chat-list-item ${name===currentPharmacyChat?'active':''}" onclick="openPharmacyChat('${name.replace(/'/g,"\\'")}')">
       <div class="cn">${name}</div><div class="cm">${lastPharmacyMsg(name)}</div>
-    </div>`).join('');
+    </div>`).join('') : `<div style="text-align:center; color:var(--text-mut); padding:30px 16px; font-size:13px;"><div style="font-size:22px; margin-bottom:8px;">👉</div>No connected pharmacies yet.</div>`;
 }
 function openPharmacyChat(name){
+  if(!name){
+    document.getElementById('msgChatName').textContent = 'Select a pharmacy';
+    document.getElementById('msgChatSub').textContent = 'No conversations yet';
+    document.getElementById('msgChatAvatar').textContent = '--';
+    document.getElementById('msgChatBody').innerHTML = `<p style="text-align:center; color:var(--text-mut); font-size:13px; margin-top:40px;">👉 Connected pharmacies will appear here once they order from you.</p>`;
+    return;
+  }
   currentPharmacyChat = name;
   renderPharmacyChatList();
   document.getElementById('msgChatAvatar').textContent = name.slice(0,2).toUpperCase();
   document.getElementById('msgChatName').textContent = name;
   document.getElementById('msgChatSub').textContent = 'Connected pharmacy · online';
-  const msgs = PHARMACY_CHATS[name].messages;
+  const msgs = PHARMACY_CHATS[name]?.messages || [];
   document.getElementById('msgChatBody').innerHTML = msgs.length
     ? msgs.map(m=>`<div class="msg ${m.dir==='in'?'in':'out'}">${m.text}<div class="meta">${m.time}</div></div>`).join('')
     : `<p style="text-align:center; color:var(--text-mut); font-size:13px; margin-top:40px;">No messages yet.</p>`;
@@ -775,7 +940,8 @@ function openPharmacyChat(name){
 }
 function sendMsg(){
   const input = document.getElementById('msgChatInput');
-  if(!input.value.trim()) return;
+  if(!input.value.trim() || !currentPharmacyChat) return;
+  if(!PHARMACY_CHATS[currentPharmacyChat]) PHARMACY_CHATS[currentPharmacyChat] = {phone:null, messages:[]};
   PHARMACY_CHATS[currentPharmacyChat].messages.push({dir:'out', text:input.value, time:'Just now'});
   input.value='';
   openPharmacyChat(currentPharmacyChat);
@@ -791,6 +957,7 @@ function openCallModal(contact){
   openModal('callModal');
 }
 function callCurrentPharmacy(){
+  if(!currentPharmacyChat){ alert('No pharmacy selected yet.'); return; }
   const c = PHARMACY_CHATS[currentPharmacyChat];
   openCallModal({name: currentPharmacyChat, phone: c ? c.phone : null});
 }
@@ -930,12 +1097,11 @@ function clearRoute(){
 
 /* =========================================================================
    AI ASSISTANT — scoped to this wholesaler's own business data.
-   Uses Puter.js's built-in AI (in-browser auth, no API key embedded here).
-   Swap BUSINESS_CONTEXT for a real backend fetch, and/or proxy this call
-   through your own server if you want your fine-tuned Gemini model instead.
+   Calls your own backend at POST /api/ai/chat — no third-party popups,
+   no external auth. Wire that endpoint to whichever model you choose.
    ========================================================================= */
 const BUSINESS_CONTEXT = {
-  business: "MedPharm Wholesale, Harare",
+  business: (getCurrentUser().businessName || 'your business') + ', ' + (getCurrentUser().city || ''),
   products: PRODUCTS,
   incoming_orders: ORDERS,
   outstanding_balances: BALANCES,
@@ -962,41 +1128,160 @@ async function sendAiMsg(){
   appendAiMsg('ai', '<em>Thinking…</em>');
   const node = document.getElementById('aiChatBody').lastElementChild;
   try{
-    if(window.puter && puter.ai && puter.ai.chat){
-      const resp = await puter.ai.chat([{role:'system', content:AI_SYSTEM_PROMPT},{role:'user', content:q}]);
-      node.innerHTML = (resp?.message?.content || resp?.toString?.() || "Sorry, I couldn't process that.");
-    } else {
-      node.innerHTML = "AI service isn't connected yet — once your backend/Gemini integration is live, this will respond using your real business data.";
-    }
-  }catch(e){ node.innerHTML = "I couldn't reach the AI service just now. Please try again."; }
+    const res = await apiRequest('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message: q, context: BUSINESS_CONTEXT, systemPrompt: AI_SYSTEM_PROMPT }),
+    });
+    node.innerHTML = res?.reply || "Sorry, I couldn't process that. Please try again.";
+  }catch(e){ node.innerHTML = "The AI assistant isn't connected yet — this will work once the AI backend endpoint is live. No external popups or logins are used."; }
 }
 document.getElementById('aiChatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendAiMsg(); });
 
 /* ---- analytics ---- */
 function renderAnalytics(){
-  const months = [['Feb',210],['Mar',260],['Apr',240],['May',310],['Jun',290],['Jul',350]];
-  const max = Math.max(...months.map(m=>m[1]));
-  document.getElementById('ordersBarChart').innerHTML = months.map(([m,v])=>`<div class="bar-col"><div class="bar" style="height:${(v/max*100)}%"></div><div class="bl">${m}</div></div>`).join('');
+  const emptyMsg = (text) => `<div style="text-align:center; color:var(--text-mut); padding:30px 16px;"><div style="font-size:22px; margin-bottom:8px;">👉</div>${text}</div>`;
 
-  const regions = [
-    {name:'Harare', pct:58, color:'#0088cc'},{name:'Bulawayo', pct:22, color:'#00b8f0'},
-    {name:'Mutare', pct:12, color:'#7fd4ec'},{name:'Gweru', pct:8, color:'#d6ecf9'},
-  ];
-  document.getElementById('regionDemand').innerHTML = regions.map(r=>`
-    <div class="region-row"><div class="sp-name">${r.name}</div><div class="sp-bar-bg"><div class="sp-bar-fill" style="width:${r.pct}%; background:${r.color}"></div></div><div class="sp-pct">${r.pct}%</div></div>`).join('');
+  // Orders bar chart — grouped by month from real ORDERS
+  if(!ORDERS.length){
+    document.getElementById('ordersBarChart').innerHTML = emptyMsg('No orders yet — this chart fills in once pharmacies start ordering.');
+  } else {
+    const byMonth = {};
+    ORDERS.forEach(o=>{
+      const d = new Date(o.date || Date.now());
+      const key = isNaN(d) ? 'Unknown' : d.toLocaleString('en-US',{month:'short'});
+      byMonth[key] = (byMonth[key]||0) + 1;
+    });
+    const entries = Object.entries(byMonth);
+    const max = Math.max(...entries.map(e=>e[1]), 1);
+    document.getElementById('ordersBarChart').innerHTML = entries.map(([m,v])=>`<div class="bar-col"><div class="bar" style="height:${(v/max*100)}%"></div><div class="bl">${m}</div></div>`).join('');
+  }
 
-  const donutData = [{l:'Amoxicillin',v:36,c:'#0088cc'},{l:'Paracetamol',v:26,c:'#00b8f0'},{l:'Cetirizine',v:22,c:'#7fd4ec'},{l:'Other',v:16,c:'#d6ecf9'}];
-  let acc=0; const gradient = donutData.map(d=>{ const start=acc; acc+=d.v; return `${d.c} ${start}% ${acc}%`; }).join(',');
-  document.getElementById('topProdDonut').style.background = `conic-gradient(${gradient})`;
-  document.getElementById('donutLegend').innerHTML = donutData.map(d=>`<div class="legend-item"><span class="legend-dot" style="background:${d.c}"></span>${d.l} — ${d.v}%</div>`).join('');
+  // Regional demand — real pharmacy customer locations (from PHARMACY_CHATS), no fake percentages
+  const pharmacyNames = Object.keys(PHARMACY_CHATS);
+  if(!pharmacyNames.length){
+    document.getElementById('regionDemand').innerHTML = emptyMsg('No connected pharmacies yet — regional demand builds up as you gain customers.');
+  } else {
+    document.getElementById('regionDemand').innerHTML = pharmacyNames.map(name=>`
+      <div class="region-row"><div class="sp-name">${name}</div><div class="sp-bar-bg"><div class="sp-bar-fill" style="width:0%; background:var(--border)"></div></div><div class="sp-pct" style="color:var(--text-mut); font-size:12px;">Not tracked yet</div></div>`).join('');
+  }
 
-  const topPharmacies = [
-    {name:'City Pharmacy', most:'Amoxicillin 500mg', orders:14, spend:'$1,890'},
-    {name:'Greenwood Pharmacy', most:'Cetirizine 10mg', orders:11, spend:'$1,240'},
-    {name:'Sunrise Pharmacy', most:'Paracetamol 500mg', orders:9, spend:'$2,100'},
-  ];
-  document.getElementById('topPharmaciesBody').innerHTML = topPharmacies.map(p=>`<tr><td><strong>${p.name}</strong></td><td>${p.most}</td><td>${p.orders}</td><td>${p.spend}</td></tr>`).join('');
+  // Top product donut — real units sold, parsed from real ORDERS items
+  const productCounts = {};
+  ORDERS.forEach(o=>{
+    (o.items||'').split(',').forEach(part=>{
+      const m = part.trim().match(/^(.+?)\s*×(\d+)/);
+      if(m){ const name=m[1].trim(); const qty=parseInt(m[2],10); productCounts[name]=(productCounts[name]||0)+qty; }
+    });
+  });
+  const sortedProducts = Object.entries(productCounts).sort((a,b)=>b[1]-a[1]);
+  if(sortedProducts.length){
+    const totalUnits = sortedProducts.reduce((s,[,v])=>s+v, 0);
+    const colors = ['#0088cc','#00b8f0','#7fd4ec','#d6ecf9','#a8c5d6'];
+    const top4 = sortedProducts.slice(0,4);
+    const otherUnits = sortedProducts.slice(4).reduce((s,[,v])=>s+v, 0);
+    const donutData = top4.map(([name,units],i)=>({l:name, v:Math.round(units/totalUnits*100), c:colors[i]}));
+    if(otherUnits>0) donutData.push({l:'Other', v:Math.round(otherUnits/totalUnits*100), c:colors[4]});
+    let acc=0; const gradient = donutData.map(d=>{ const start=acc; acc+=d.v; return `${d.c} ${start}% ${acc}%`; }).join(',');
+    document.getElementById('topProdDonut').style.background = `conic-gradient(${gradient})`;
+    document.getElementById('donutLegend').innerHTML = donutData.map(d=>`<div class="legend-item"><span class="legend-dot" style="background:${d.c}"></span>${d.l} — ${d.v}%</div>`).join('');
+  } else {
+    document.getElementById('topProdDonut').style.background = 'var(--border)';
+    document.getElementById('donutLegend').innerHTML = `<div style="color:var(--text-mut); font-size:12.5px;">No data yet</div>`;
+  }
+
+  // Top pharmacies — real spend/order counts from real ORDERS
+  const pharmacyStats = {};
+  ORDERS.forEach(o=>{
+    if(!pharmacyStats[o.pharmacy]) pharmacyStats[o.pharmacy] = {orders:0, spend:0, items:{}};
+    pharmacyStats[o.pharmacy].orders += 1;
+    pharmacyStats[o.pharmacy].spend += parseFloat((o.total||'$0').replace(/[^0-9.]/g,'')) || 0;
+    (o.items||'').split(',').forEach(part=>{
+      const m = part.trim().match(/^(.+?)\s*×(\d+)/);
+      if(m){ const name=m[1].trim(); pharmacyStats[o.pharmacy].items[name] = (pharmacyStats[o.pharmacy].items[name]||0) + parseInt(m[2],10); }
+    });
+  });
+  const topPharmacyEntries = Object.entries(pharmacyStats).sort((a,b)=>b[1].spend-a[1].spend);
+  if(topPharmacyEntries.length){
+    document.getElementById('topPharmaciesBody').innerHTML = topPharmacyEntries.map(([name,s])=>{
+      const mostOrdered = Object.entries(s.items).sort((a,b)=>b[1]-a[1])[0];
+      return `<tr><td><strong>${name}</strong></td><td>${mostOrdered ? mostOrdered[0] : '—'}</td><td>${s.orders}</td><td>$${s.spend.toFixed(2)}</td></tr>`;
+    }).join('');
+  } else {
+    document.getElementById('topPharmaciesBody').innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-mut); padding:30px;">No pharmacy customers yet.</td></tr>`;
+  }
 }
+
+/* ---- auth guard + load real data + populate real user info on page start ---- */
+(function authGuard(){
+  if (!getAuthToken()) {
+    window.location.href = '/';
+    return;
+  }
+  const user = getCurrentUser();
+  const ini = initials(user.fullName);
+
+  const sbAvatar = document.getElementById('sidebarAvatar');
+  const sbName = document.getElementById('sidebarUserName');
+  const sbBiz = document.getElementById('sidebarUserBiz');
+  if(sbAvatar) sbAvatar.textContent = ini;
+  if(sbName) sbName.textContent = user.businessName || user.fullName || 'Wholesaler';
+  if(sbBiz) sbBiz.textContent = `${user.city || ''}`;
+
+  const tbAvatar = document.getElementById('topbarAvatar');
+  const tbName = document.getElementById('topbarUserName');
+  const tbBiz = document.getElementById('topbarUserBiz');
+  if(tbAvatar) tbAvatar.textContent = ini;
+  if(tbName) tbName.textContent = user.businessName || user.fullName || 'Wholesaler';
+  if(tbBiz) tbBiz.textContent = 'Verified Wholesaler';
+})();
+
+async function refreshDashboardStats(){
+  await loadRealData();
+
+  const newOrdersToday = ORDERS.filter(o=>{
+    const d = new Date(o.date);
+    const today = new Date();
+    return !isNaN(d) && d.toDateString() === today.toDateString();
+  }).length;
+  const revenue = ORDERS.reduce((sum,o)=>sum + (parseFloat((o.total||'$0').replace(/[^0-9.]/g,''))||0), 0);
+  const lowStockCount = PRODUCTS.filter(p=>p.qty > 0 && p.qty < 200).length + PRODUCTS.filter(p=>p.qty===0).length;
+  const uniqueCustomers = new Set(ORDERS.map(o=>o.pharmacy)).size;
+  const pendingOrders = ORDERS.filter(o=>o.status==='pending').length;
+
+  const elNewOrders = document.getElementById('statNewOrders');
+  const elRevenue = document.getElementById('statRevenue');
+  const elLowStock = document.getElementById('statLowStock');
+  const elCustomers = document.getElementById('statCustomers');
+  const elOrdersTrend = document.getElementById('statOrdersTrend');
+  const elRevenueTrend = document.getElementById('statRevenueTrend');
+  const elLowStockTrend = document.getElementById('statLowStockTrend');
+  const elCustomersTrend = document.getElementById('statCustomersTrend');
+  const qaOrdersText = document.getElementById('qaOrdersText');
+  const navBadge = document.getElementById('navOrdersBadge');
+  const dashAlerts = document.getElementById('dashAlertsBody');
+
+  if(elNewOrders) elNewOrders.textContent = newOrdersToday;
+  if(elRevenue) elRevenue.textContent = '$' + revenue.toFixed(0);
+  if(elLowStock) elLowStock.textContent = lowStockCount;
+  if(elCustomers) elCustomers.textContent = uniqueCustomers;
+  if(elOrdersTrend) elOrdersTrend.textContent = ORDERS.length ? `${ORDERS.length} total order(s)` : 'No orders yet';
+  if(elRevenueTrend) elRevenueTrend.textContent = ORDERS.length ? 'This period' : 'No orders yet';
+  if(elLowStockTrend) elLowStockTrend.textContent = lowStockCount ? 'Needs restock' : (PRODUCTS.length ? 'All stocked' : 'No products yet');
+  if(elCustomersTrend) elCustomersTrend.textContent = uniqueCustomers ? `${uniqueCustomers} pharmacies` : 'None yet';
+  if(qaOrdersText) qaOrdersText.textContent = pendingOrders ? `${pendingOrders} awaiting confirmation` : 'No pending orders';
+  if(navBadge){ navBadge.textContent = pendingOrders; navBadge.style.display = pendingOrders ? 'inline-flex' : 'none'; }
+
+  if(dashAlerts){
+    const alerts = [];
+    if(lowStockCount) alerts.push({icon:'triangle-exclamation', cls:'warn', t1:`${lowStockCount} product(s) low or out of stock`, t2:'Check Stock & Pricing'});
+    const overdueBalances = BALANCES.filter(b=>b.status==='low' || b.status==='pending').length;
+    if(overdueBalances) alerts.push({icon:'clock', cls:'info', t1:`${overdueBalances} pharmac${overdueBalances===1?'y has':'ies have'} outstanding balances`, t2:'Check Payments & Statements'});
+    dashAlerts.innerHTML = alerts.length
+      ? alerts.map(a=>`<div class="alert-row"><div class="alert-ico ${a.cls}"><i class="fa-solid fa-${a.icon}"></i></div><div class="alert-text"><div class="t1">${a.t1}</div><div class="t2">${a.t2}</div></div></div>`).join('')
+      : `<div style="text-align:center; color:var(--text-mut); padding:20px 16px;"><div style="font-size:26px; margin-bottom:10px;">👉</div>No alerts yet — this fills up automatically once you have orders, stock, and payments.</div>`;
+  }
+}
+refreshDashboardStats();
 </script>
 </body>
 </html>
