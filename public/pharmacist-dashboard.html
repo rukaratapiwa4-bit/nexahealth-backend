@@ -523,12 +523,12 @@ tbody tr:hover{background:#fafcfe;}
       <a class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i> Settings</a>
     </nav>
     <div class="sidebar-foot">
-      <div class="avatar-sm">TM</div>
+      <div class="avatar-sm" id="sidebarAvatar">--</div>
       <div>
-        <div class="who">Tendai Moyo</div>
-        <div class="sub">City Pharmacy · Harare</div>
+        <div class="who" id="sidebarUserName">Loading...</div>
+        <div class="sub" id="sidebarUserBiz">—</div>
       </div>
-      <i class="fa-solid fa-right-from-bracket logout" title="Log out"></i>
+      <i class="fa-solid fa-right-from-bracket logout" title="Log out" onclick="handleLogout()"></i>
     </div>
   </aside>
 
@@ -550,10 +550,10 @@ tbody tr:hover{background:#fafcfe;}
         <div class="icon-btn"><i class="fa-regular fa-bell"></i><span class="dot"></span></div>
         <div class="icon-btn"><i class="fa-regular fa-envelope"></i></div>
         <div class="topbar-profile">
-          <div class="avatar-sm">TM</div>
+          <div class="avatar-sm" id="topbarAvatar">--</div>
           <div>
-            <div class="name">Tendai Moyo</div>
-            <div class="pharmacy">City Pharmacy</div>
+            <div class="name" id="topbarUserName">Loading...</div>
+            <div class="pharmacy" id="topbarUserBiz">—</div>
           </div>
         </div>
       </div>
@@ -608,22 +608,10 @@ tbody tr:hover{background:#fafcfe;}
               <div><h3>Live alerts</h3><div class="sub">Auto-generated from your inventory &amp; supplier feeds</div></div>
               <a class="link-action">View all</a>
             </div>
-            <div class="panel-body">
-              <div class="alert-row">
-                <div class="alert-ico warn"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                <div class="alert-text"><div class="t1">You're running low on Amoxicillin 500mg</div><div class="t2">12 units left · predicted stockout in 4 days</div></div>
-              </div>
-              <div class="alert-row">
-                <div class="alert-ico info"><i class="fa-solid fa-tag"></i></div>
-                <div class="alert-text"><div class="t1">3 suppliers updated prices today</div><div class="t2">Paracetamol, Cetirizine, ORS sachets</div></div>
-              </div>
-              <div class="alert-row">
-                <div class="alert-ico danger"><i class="fa-solid fa-ban"></i></div>
-                <div class="alert-text"><div class="t1">Product recall notice</div><div class="t2">MedPharm Wholesale recalled Batch #A2201 — check your stock</div></div>
-              </div>
-              <div class="alert-row">
-                <div class="alert-ico info"><i class="fa-solid fa-truck"></i></div>
-                <div class="alert-text"><div class="t1">Order #ORD-1042 is 5km away</div><div class="t2">Estimated arrival in 12 minutes</div></div>
+            <div class="panel-body" id="liveAlertsPanel">
+              <div style="text-align:center; color:var(--text-mut); padding:30px 16px;">
+                <i class="fa-solid fa-hand-point-right" style="font-size:26px; color:var(--primary); margin-bottom:10px; display:block;"></i>
+                No alerts yet — this fills up automatically once you have orders, stock, and suppliers connected.
               </div>
             </div>
           </div>
@@ -632,26 +620,12 @@ tbody tr:hover{background:#fafcfe;}
             <div class="panel-head">
               <div><h3>Stock-out predictions</h3><div class="sub">ML forecast from your sales rate</div></div>
             </div>
-            <div class="panel-body" style="padding-top:8px;">
-              <div class="alert-row" style="padding-top:0;">
-                <div class="alert-text" style="width:100%;">
-                  <div class="t1">Amoxicillin 500mg</div>
-                  <div class="t2">Runs out in <strong style="color:var(--danger)">4 days</strong> at current usage</div>
-                </div>
+            <div class="panel-body" style="padding-top:8px;" id="stockoutPanel">
+              <div style="text-align:center; color:var(--text-mut); padding:20px 16px;">
+                <i class="fa-solid fa-hand-point-right" style="font-size:26px; color:var(--primary); margin-bottom:10px; display:block;"></i>
+                No predictions yet — place a few orders and we'll start forecasting your stock-out dates.
               </div>
-              <div class="alert-row">
-                <div class="alert-text" style="width:100%;">
-                  <div class="t1">ORS Sachets</div>
-                  <div class="t2">Runs out in <strong style="color:var(--warning)">9 days</strong></div>
-                </div>
-              </div>
-              <div class="alert-row">
-                <div class="alert-text" style="width:100%;">
-                  <div class="t1">Atorvastatin 20mg</div>
-                  <div class="t2">Runs out in <strong style="color:var(--warning)">11 days</strong></div>
-                </div>
-              </div>
-              <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="goTo('search')">Reorder now</button>
+              <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="goTo('search')"><i class="fa-solid fa-hand-point-right"></i>&nbsp; Search &amp; place your first order</button>
             </div>
           </div>
         </div>
@@ -751,7 +725,7 @@ tbody tr:hover{background:#fafcfe;}
       <section class="view" id="view-tracking">
         <div class="panel">
           <div class="panel-head">
-            <div><h3 id="trackTitle">Order #ORD-1042 — Amoxicillin 500mg ×500</h3><div class="sub" id="trackSub">MedPharm Wholesale · ETA 12 min</div></div>
+            <div><h3 id="trackTitle">No active delivery selected</h3><div class="sub" id="trackSub">Track an order from "My Orders" to see it here</div></div>
             <button class="btn btn-outline btn-sm" id="callDriverBtn" onclick="openCallModal(DRIVER_INFO)"><i class="fa-solid fa-phone"></i> Call driver</button>
           </div>
           <div class="panel-body" id="trackingBody">
@@ -840,8 +814,10 @@ tbody tr:hover{background:#fafcfe;}
             <div class="chat-main">
               <div class="chat-head"><i class="fa-solid fa-people-group" style="color:var(--primary)"></i><div><div class="t">Harare — General</div><div class="s">148 pharmacies online</div></div></div>
               <div class="chat-body" id="roomChatBody">
-                <div class="msg in"><strong>City Pharmacy:</strong> Does anyone in Harare have Atorvastatin 20mg? My patient needs it urgently.<div class="meta">10:14 AM</div></div>
-                <div class="msg in"><strong>Greenwood Pharmacy:</strong> Yes, we have 50 tablets. Send them over.<div class="meta">10:16 AM</div></div>
+                <div style="text-align:center; color:var(--text-mut); padding:30px 16px;">
+                  <i class="fa-solid fa-hand-point-right" style="font-size:24px; color:var(--primary); margin-bottom:8px; display:block;"></i>
+                  No messages yet in this room — be the first to post.
+                </div>
               </div>
               <div class="chat-input">
                 <input id="roomChatInput" type="text" placeholder="Type a message to the room...">
@@ -931,9 +907,9 @@ tbody tr:hover{background:#fafcfe;}
             <div class="settings-grid">
               <div class="settings-card">
                 <h4><i class="fa-solid fa-store" style="color:var(--primary)"></i> Profile settings</h4>
-                <div class="info-row"><strong>Pharmacy:</strong> City Pharmacy</div>
-                <div class="info-row"><strong>Address:</strong> 45 Baker Avenue, Harare</div>
-                <div class="info-row"><strong>Phone:</strong> +263 71 234 5678</div>
+                <div class="info-row"><strong>Pharmacy:</strong> <span id="settingsBizName">—</span></div>
+                <div class="info-row"><strong>Address:</strong> <span id="settingsAddress">—</span></div>
+                <div class="info-row"><strong>Phone:</strong> <span id="settingsPhone">—</span></div>
                 <a class="link-action" style="display:inline-block; margin-top:10px;">Edit profile</a>
               </div>
               <div class="settings-card">
@@ -952,9 +928,7 @@ tbody tr:hover{background:#fafcfe;}
               </div>
               <div class="settings-card">
                 <h4><i class="fa-solid fa-users" style="color:var(--primary-dark)"></i> User management</h4>
-                <div class="role-row"><span class="rname">Tendai Moyo (you)</span><span class="rtag">Admin</span></div>
-                <div class="role-row"><span class="rname">Sarah Jones</span><span class="rtag">Purchaser</span></div>
-                <div class="role-row"><span class="rname">Mark Brown</span><span class="rtag">Viewer</span></div>
+                <div class="role-row"><span class="rname" id="settingsYouName">—</span><span class="rtag">Admin</span></div>
                 <a class="link-action" style="display:inline-block; margin-top:10px;">Add staff user</a>
               </div>
             </div>
@@ -1254,14 +1228,48 @@ document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.length ? MOC
 document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.length ? MOCK_ORDERS.map(o=>orderRow(o,true)).join('') : renderOrdersEmpty(7);
 
 /* ---- auth guard + load real data on page start ---- */
+function initials(name){
+  if(!name) return '--';
+  return name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+}
+function handleLogout(){
+  localStorage.removeItem('nexa_token');
+  localStorage.removeItem('nexa_user');
+  window.location.href = '/';
+}
 (function authGuard(){
   if (!getAuthToken()) {
     window.location.href = '/';
     return;
   }
   const user = getCurrentUser();
-  const nameEl = document.querySelector('.sidebar-foot .who, .user-name, [data-user-name]');
-  if (nameEl && user.fullName) nameEl.textContent = user.fullName;
+  const ini = initials(user.fullName);
+
+  // Sidebar
+  const sbAvatar = document.getElementById('sidebarAvatar');
+  const sbName = document.getElementById('sidebarUserName');
+  const sbBiz = document.getElementById('sidebarUserBiz');
+  if(sbAvatar) sbAvatar.textContent = ini;
+  if(sbName) sbName.textContent = user.fullName || 'Pharmacist';
+  if(sbBiz) sbBiz.textContent = `${user.businessName || 'Pharmacy'} · ${user.city || ''}`;
+
+  // Topbar
+  const tbAvatar = document.getElementById('topbarAvatar');
+  const tbName = document.getElementById('topbarUserName');
+  const tbBiz = document.getElementById('topbarUserBiz');
+  if(tbAvatar) tbAvatar.textContent = ini;
+  if(tbName) tbName.textContent = user.fullName || 'Pharmacist';
+  if(tbBiz) tbBiz.textContent = user.businessName || 'Pharmacy';
+
+  // Settings screen
+  const stBiz = document.getElementById('settingsBizName');
+  const stAddr = document.getElementById('settingsAddress');
+  const stPhone = document.getElementById('settingsPhone');
+  const stYou = document.getElementById('settingsYouName');
+  if(stBiz) stBiz.textContent = user.businessName || '—';
+  if(stAddr) stAddr.textContent = [user.address, user.city].filter(Boolean).join(', ') || '—';
+  if(stPhone) stPhone.textContent = user.phone || '—';
+  if(stYou) stYou.textContent = `${user.fullName || 'You'} (you)`;
 })();
 loadRealData();
 
@@ -1479,7 +1487,7 @@ function showInvoice(o){
     : `<span class="badge pending">Pay on delivery/collection</span>`;
   document.getElementById('invoiceBody').innerHTML = `
     <div class="invoice-head">
-      <div><div class="logo-mark">N</div><h4>NexaHealth</h4><div style="font-size:12px; color:var(--text-mut);">City Pharmacy, Harare</div></div>
+      <div><div class="logo-mark">N</div><h4>NexaHealth</h4><div style="font-size:12px; color:var(--text-mut);">${getCurrentUser().businessName || 'Your Pharmacy'}, ${getCurrentUser().city || ''}</div></div>
       <div class="inv-meta"><div><strong>Invoice for ${o.id}</strong></div><div>${o.date === 'Just now' ? new Date().toLocaleDateString() : o.date}</div></div>
     </div>
     <table class="invoice-table">
@@ -1779,7 +1787,7 @@ document.getElementById('roomChatInput').addEventListener('keydown', e=>{ if(e.k
 // any feature, not just inventory: stock, orders, suppliers, delivery options, payment
 // methods, and account/settings info.
 const PHARMACY_CONTEXT = {
-  pharmacy: "City Pharmacy, Harare",
+  pharmacy: (getCurrentUser().businessName || 'your pharmacy') + ', ' + (getCurrentUser().city || ''),
   low_stock: [
     {name:"Amoxicillin 500mg", qty:12, days_left:4},
     {name:"ORS Sachets", qty:80, days_left:9},
