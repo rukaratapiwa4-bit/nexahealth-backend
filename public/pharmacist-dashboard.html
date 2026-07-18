@@ -14,8 +14,6 @@
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 
-<!-- Puter.js (in-browser auth + AI, no server-side API key required) -->
-<script src="https://js.puter.com/v2/"></script>
 
 <style>
 /* ============ DESIGN TOKENS ============ */
@@ -506,12 +504,12 @@ tbody tr:hover{background:#fafcfe;}
       <a class="nav-item" data-view="search"><i class="fa-solid fa-magnifying-glass"></i> Search &amp; Order</a>
       <a class="nav-item" data-view="catalogue"><i class="fa-solid fa-book-medical"></i> Product Catalogue</a>
       <a class="nav-item" data-view="procurement"><i class="fa-solid fa-robot"></i> Smart Procurement</a>
-      <a class="nav-item" data-view="orders"><i class="fa-solid fa-receipt"></i> My Orders <span class="badge-dot">3</span></a>
+      <a class="nav-item" data-view="orders"><i class="fa-solid fa-receipt"></i> My Orders <span class="badge-dot" id="navOrdersBadge" style="display:none;">0</span></a>
       <a class="nav-item" data-view="tracking"><i class="fa-solid fa-truck-fast"></i> Delivery Tracking</a>
 
       <div class="group-label">Accounts</div>
-      <a class="nav-item" data-view="applications"><i class="fa-solid fa-file-signature"></i> Applications <span class="badge-dot">2</span></a>
-      <a class="nav-item" data-view="invoices"><i class="fa-solid fa-file-invoice"></i> Invoices <span class="badge-dot">2</span></a>
+      <a class="nav-item" data-view="applications"><i class="fa-solid fa-file-signature"></i> Applications <span class="badge-dot" id="navAppsBadge" style="display:none;">0</span></a>
+      <a class="nav-item" data-view="invoices"><i class="fa-solid fa-file-invoice"></i> Invoices <span class="badge-dot" id="navInvoicesBadge" style="display:none;">0</span></a>
 
       <div class="group-label">Collaboration</div>
       <a class="nav-item" data-view="chatroom"><i class="fa-solid fa-people-group"></i> Pharmacy Chat Room</a>
@@ -807,12 +805,10 @@ tbody tr:hover{background:#fafcfe;}
           <div class="panel-head"><div><h3>Pharmacy Chat Room</h3><div class="sub">Ask nearby pharmacies for urgent stock, region-wide</div></div></div>
           <div class="chat-shell">
             <div class="chat-list">
-              <div class="chat-list-item active"><div class="cn">Harare — General</div><div class="cm">Does anyone have Atorvastatin 20mg?</div></div>
-              <div class="chat-list-item"><div class="cn">Bulawayo — General</div><div class="cm">Cetirizine shortage this week</div></div>
-              <div class="chat-list-item"><div class="cn">Urgent Requests</div><div class="cm">Need Insulin urgently, patient waiting</div></div>
+              <div class="chat-list-item active"><div class="cn">General</div><div class="cm">Region-wide pharmacy chat</div></div>
             </div>
             <div class="chat-main">
-              <div class="chat-head"><i class="fa-solid fa-people-group" style="color:var(--primary)"></i><div><div class="t">Harare — General</div><div class="s">148 pharmacies online</div></div></div>
+              <div class="chat-head"><i class="fa-solid fa-people-group" style="color:var(--primary)"></i><div><div class="t">General</div><div class="s">Region-wide pharmacy chat</div></div></div>
               <div class="chat-body" id="roomChatBody">
                 <div style="text-align:center; color:var(--text-mut); padding:30px 16px;">
                   <i class="fa-solid fa-hand-point-right" style="font-size:24px; color:var(--primary); margin-bottom:8px; display:block;"></i>
@@ -1110,6 +1106,18 @@ async function loadRealData(){
     document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.length ? MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('') : renderOrdersEmpty(6);
     document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.length ? MOCK_ORDERS.map(o=>orderRow(o,true)).join('') : renderOrdersEmpty(7);
     if (typeof renderApplications === 'function') renderApplications('all');
+    if (typeof renderSupplierChatList === 'function') renderSupplierChatList();
+
+    // Real nav badge counts — only show if there's actually something to flag
+    const activeOrders = MOCK_ORDERS.filter(o=>['pending','confirmed','transit'].includes(o.status)).length;
+    const dueInvoices = INVOICES.filter(i=>i.status!=='paid').length;
+    const pendingApps = APPLICATIONS.filter(a=>a.status==='pending').length;
+    const ordersBadge = document.getElementById('navOrdersBadge');
+    const invoicesBadge = document.getElementById('navInvoicesBadge');
+    const appsBadge = document.getElementById('navAppsBadge');
+    if (ordersBadge) { ordersBadge.textContent = activeOrders; ordersBadge.style.display = activeOrders ? 'inline-flex' : 'none'; }
+    if (invoicesBadge) { invoicesBadge.textContent = dueInvoices; invoicesBadge.style.display = dueInvoices ? 'inline-flex' : 'none'; }
+    if (appsBadge) { appsBadge.textContent = pendingApps; appsBadge.style.display = pendingApps ? 'inline-flex' : 'none'; }
   } catch (err) {
     console.error('Failed to load real data, dashboard is showing mock data as fallback:', err.message);
   }
@@ -1139,7 +1147,7 @@ const PAYMENT_METHODS = [
   {id:'card', name:'Visa / Mastercard', icon:'fa-credit-card', desc:'Debit or credit card'},
 ];
 
-const DRIVER_INFO = {name:'Farai T.', phone:'+263 77 456 1230', vehicle:'Delivery van — AEB 4521'};
+const DRIVER_INFO = null; // real driver info populates once an order is actually dispatched
 
 const CATALOGUE_ITEMS = []; // MVP: real catalogue appears once wholesalers add products via their dashboard
 
@@ -1159,9 +1167,8 @@ Object.values(MOCK_SUPPLIERS).flat().forEach(s=>{
 const SUPPLIER_CHATS = {}; // MVP: real chat threads appear once you have an approved wholesaler application
 let currentSupplierChat = null;
 function getConnectedSuppliers(){
-  const approved = APPLICATIONS.filter(a=>a.status==='approved').map(a=>a.name);
-  const base = ['MedPharm Wholesale', 'ZimDrug Distributors', 'HealthLink Suppliers', 'PharmaCorp Zimbabwe'];
-  return [...new Set([...base, ...approved])];
+  // Only wholesalers you actually have an APPROVED application with — no fake contacts
+  return [...new Set(APPLICATIONS.filter(a=>a.status==='approved').map(a=>a.name))];
 }
 function lastMsgPreview(name){
   const msgs = SUPPLIER_CHATS[name];
@@ -1170,10 +1177,10 @@ function lastMsgPreview(name){
 }
 function renderSupplierChatList(){
   const suppliers = getConnectedSuppliers();
-  document.getElementById('supplierChatList').innerHTML = suppliers.map(s=>`
+  document.getElementById('supplierChatList').innerHTML = suppliers.length ? suppliers.map(s=>`
     <div class="chat-list-item ${s===currentSupplierChat?'active':''}" onclick="openSupplierChat('${s.replace(/'/g,"\\'")}')">
       <div class="cn">${s}</div><div class="cm">${lastMsgPreview(s)}</div>
-    </div>`).join('');
+    </div>`).join('') : `<div style="text-align:center; color:var(--text-mut); padding:30px 16px; font-size:13px;"><i class="fa-solid fa-hand-point-right" style="font-size:20px; color:var(--primary); margin-bottom:8px; display:block;"></i>No connected suppliers yet.<br>Apply to a wholesaler first.</div>`;
 }
 function openSupplierChat(name){
   currentSupplierChat = name;
@@ -1775,11 +1782,10 @@ document.getElementById('roomChatInput').addEventListener('keydown', e=>{ if(e.k
 
 /* =========================================================================
    AI ASSISTANT — scoped strictly to this pharmacist's own data
-   Uses Puter.js's built-in AI (puter.ai.chat), which authenticates the
-   user in-browser — no API key is embedded in this file. When your
-   backend is ready, swap PHARMACY_CONTEXT below for a real API response
-   and/or route this call through your own server if you want to use a
-   different or fine-tuned model.
+   Calls your own backend at POST /api/ai/chat (no third-party popups,
+   no external auth). Wire that endpoint to whichever model you choose
+   (OpenAI, Gemini, etc.) — the request already includes PHARMACY_CONTEXT
+   and the system prompt below.
    ========================================================================= */
 
 // Replace this with a live snapshot fetched from your backend for the logged-in pharmacy.
@@ -1788,18 +1794,8 @@ document.getElementById('roomChatInput').addEventListener('keydown', e=>{ if(e.k
 // methods, and account/settings info.
 const PHARMACY_CONTEXT = {
   pharmacy: (getCurrentUser().businessName || 'your pharmacy') + ', ' + (getCurrentUser().city || ''),
-  low_stock: [
-    {name:"Amoxicillin 500mg", qty:12, days_left:4},
-    {name:"ORS Sachets", qty:80, days_left:9},
-    {name:"Atorvastatin 20mg", qty:40, days_left:11},
-  ],
   orders: MOCK_ORDERS,
   suppliers_available_now: MOCK_SUPPLIERS,
-  supplier_on_time_performance: [
-    {name:"ZimDrug Distributors", on_time_pct:91},
-    {name:"MedPharm Wholesale", on_time_pct:95},
-    {name:"HealthLink Suppliers", on_time_pct:78},
-  ],
   product_catalogue: CATALOGUE_ITEMS,
   smart_procurement_suggestions: PROCUREMENT_ITEMS,
   supplier_applications: APPLICATIONS,
@@ -1808,6 +1804,8 @@ const PHARMACY_CONTEXT = {
   default_payment_method: selectedDefaultPM,
   driver_on_current_delivery: DRIVER_INFO,
 };
+// Note: all fields above now reflect REAL account state (empty until real
+// data exists) — no hardcoded stock levels, supplier ratings, or driver info.
 
 const AI_SYSTEM_PROMPT = `You are the NexaHealth Assistant, embedded inside this pharmacist's NexaHealth dashboard.
 You can help with absolutely anything inside the NexaHealth app for this account, across every section: the
@@ -1872,17 +1870,13 @@ async function sendAiMsg(){
   const thinkingNode = document.getElementById('aiChatBody').lastElementChild;
 
   try{
-    if(window.puter && puter.ai && puter.ai.chat){
-      const resp = await puter.ai.chat([
-        {role:'system', content: AI_SYSTEM_PROMPT},
-        {role:'user', content: q}
-      ]);
-      thinkingNode.innerHTML = (resp?.message?.content || resp?.toString?.() || "Sorry, I couldn't process that.");
-    } else {
-      thinkingNode.innerHTML = "AI service isn't connected yet — once your backend/Gemini integration is live, this will respond using your pharmacy's real data.";
-    }
+    const res = await apiRequest('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message: q, context: PHARMACY_CONTEXT, systemPrompt: AI_SYSTEM_PROMPT }),
+    });
+    thinkingNode.innerHTML = res?.reply || "Sorry, I couldn't process that. Please try again.";
   }catch(err){
-    thinkingNode.innerHTML = "I couldn't reach the AI service just now. Please try again in a moment.";
+    thinkingNode.innerHTML = "The AI assistant isn't connected yet — this will work once the AI backend endpoint is live. No external popups or logins are used.";
   }
 }
 document.getElementById('aiChatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendAiMsg(); });
