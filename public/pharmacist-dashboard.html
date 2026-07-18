@@ -41,6 +41,17 @@
   --sidebar-w:252px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
+/* Global: every clickable element gets a proper pointer cursor —
+   fixes the "insertion line instead of hand cursor" issue on hover */
+button, a, .nav-item, .qa-card, .chat-list-item, .app-card, [onclick],
+.btn, .link-action, .badge-dot, .cart-fab, .icon-btn, .stat-card[onclick],
+.upload-box, .toggle-pass, .logout, select, .filter-chip, .sort-btn {
+  cursor: pointer;
+}
+input[type="text"], input[type="email"], input[type="password"], input[type="tel"],
+input[type="number"], input[type="date"], textarea {
+  cursor: text;
+}
 body{
   font-family:'Inter',sans-serif;
   background:var(--bg);
@@ -141,6 +152,20 @@ ul{list-style:none;}
   position:absolute; top:7px; right:8px; width:8px; height:8px; border-radius:50%;
   background:var(--danger); border:2px solid var(--surface);
 }
+.topbar-dropdown{
+  display:none; position:absolute; top:calc(100% + 10px); right:0; width:320px;
+  background:#fff; border:1px solid var(--border); border-radius:12px;
+  box-shadow:0 12px 32px rgba(0,0,0,.14); z-index:200; overflow:hidden;
+}
+.topbar-dropdown.show{display:block;}
+.topbar-dropdown .td-head{padding:14px 18px; font-weight:700; font-size:13.5px; border-bottom:1px solid var(--border); color:var(--primary-dark);}
+.topbar-dropdown .td-body{max-height:320px; overflow-y:auto;}
+.topbar-dropdown .td-empty{padding:30px 18px; text-align:center; color:var(--text-mut); font-size:13px;}
+.topbar-dropdown .td-item{padding:12px 18px; border-bottom:1px solid var(--border); font-size:13px; cursor:pointer;}
+.topbar-dropdown .td-item:hover{background:var(--bg);}
+.topbar-dropdown .td-item:last-child{border-bottom:none;}
+.topbar-dropdown .td-item .td-title{font-weight:600; color:var(--text);}
+.topbar-dropdown .td-item .td-sub{color:var(--text-mut); font-size:12px; margin-top:2px;}
 .topbar-profile{display:flex; align-items:center; gap:10px; padding-left:12px; border-left:1px solid var(--border);}
 .topbar-profile .name{font-size:13.5px; font-weight:600;}
 .topbar-profile .pharmacy{font-size:11.5px; color:var(--text-mut);}
@@ -249,6 +274,14 @@ tbody tr:hover{background:#fafcfe;}
 .chip:hover{background:rgba(255,255,255,.2);}
 
 .result-medname{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.sort-filter-bar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; padding:12px 16px; background:#fff; border:1px solid var(--border); border-radius:12px;}
+.sort-filter-bar .sf-label{font-size:12.5px; font-weight:600; color:var(--text-mut); margin-right:4px;}
+.sort-btn{
+  border:1px solid var(--border); background:#fff; color:var(--text); font-size:12.5px; font-weight:600;
+  padding:7px 14px; border-radius:20px; display:inline-flex; align-items:center; gap:6px; transition:all .15s;
+}
+.sort-btn:hover{border-color:var(--primary); color:var(--primary);}
+.sort-btn.active{background:var(--primary); border-color:var(--primary); color:#fff;}
 .result-medname h3{font-size:15.5px; font-weight:700;}
 .result-medname .count{font-size:12px; color:var(--text-mut);}
 
@@ -372,6 +405,13 @@ tbody tr:hover{background:#fafcfe;}
   width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   box-shadow:var(--shadow-lg); font-size:19px; z-index:200;
 }
+.floating-confirm-bar{
+  display:none; position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
+  z-index:190; box-shadow:var(--shadow-lg); border-radius:14px; overflow:hidden;
+}
+.floating-confirm-bar.show{display:block;}
+.floating-confirm-bar .btn{padding:14px 28px; font-size:14.5px; border-radius:14px; box-shadow:none;}
+@media(max-width:600px){ .floating-confirm-bar{left:16px; right:16px; transform:none; width:calc(100% - 32px);} .floating-confirm-bar .btn{width:100%; justify-content:center;} }
 .cart-fab .count{
   position:absolute; top:-4px; right:-4px; background:var(--danger); color:#fff; font-size:11px; font-weight:800;
   width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
@@ -411,14 +451,14 @@ tbody tr:hover{background:#fafcfe;}
 .t-step.done .lbl, .t-step.active .lbl{color:var(--text);}
 
 /* ============ CHAT (rooms + AI) shared ============ */
-.chat-shell{display:grid; grid-template-columns:280px 1fr; height:560px;}
+.chat-shell{display:grid; grid-template-columns:280px 1fr; height:min(560px, calc(100vh - 260px)); min-height:340px;}
 .chat-list{border-right:1px solid var(--border); overflow-y:auto;}
 .chat-list-item{padding:14px 18px; border-bottom:1px solid var(--border); cursor:pointer;}
 .chat-list-item.active{background:var(--primary-light);}
 .chat-list-item .cn{font-size:13.5px; font-weight:600;}
 .chat-list-item .cm{font-size:12px; color:var(--text-mut); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.chat-main{display:flex; flex-direction:column;}
-.chat-head{padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;}
+.chat-main{display:flex; flex-direction:column; min-height:0; height:100%;}
+.chat-head{padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0;}
 .chat-head .t{font-size:13.5px; font-weight:700;}
 .chat-head .s{font-size:11.5px; color:var(--text-mut);}
 .chat-body{flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px;}
@@ -427,7 +467,7 @@ tbody tr:hover{background:#fafcfe;}
 .msg.out{background:var(--primary); color:#fff; border-bottom-right-radius:4px; align-self:flex-end;}
 .msg.ai{background:var(--primary-light); border-bottom-left-radius:4px; align-self:flex-start; color:var(--primary-dark);}
 .msg .meta{font-size:10px; opacity:.65; margin-top:5px;}
-.chat-input{padding:14px 18px; border-top:1px solid var(--border); display:flex; gap:10px;}
+.chat-input{padding:14px 18px; border-top:1px solid var(--border); display:flex; gap:10px; flex-shrink:0;}
 .chat-input input{flex:1; border:1px solid var(--border); border-radius:10px; padding:11px 14px; outline:none; font-size:13.5px;}
 .chat-input button{width:42px; height:42px; background:var(--primary); color:#fff; border-radius:10px;}
 
@@ -443,7 +483,7 @@ tbody tr:hover{background:#fafcfe;}
 @keyframes pulseRec{0%{box-shadow:0 0 0 0 rgba(220,38,38,.4);} 70%{box-shadow:0 0 0 10px rgba(220,38,38,0);} 100%{box-shadow:0 0 0 0 rgba(220,38,38,0);}}
 .ai-scope-note{
   background:var(--primary-light); color:var(--primary-dark); font-size:11.5px; padding:9px 14px;
-  display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--border);
+  display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--border); flex-shrink:0;
 }
 
 /* ============ ANALYTICS ============ */
@@ -545,8 +585,24 @@ tbody tr:hover{background:#fafcfe;}
         <input type="text" placeholder="Quick search medicines, orders, suppliers...">
       </div>
       <div class="topbar-actions">
-        <div class="icon-btn"><i class="fa-regular fa-bell"></i><span class="dot"></span></div>
-        <div class="icon-btn"><i class="fa-regular fa-envelope"></i></div>
+        <div class="icon-btn-wrap" style="position:relative;">
+          <div class="icon-btn" onclick="toggleDropdown('notifDropdown')"><i class="fa-regular fa-bell"></i><span class="dot" id="notifDot" style="display:none;"></span></div>
+          <div class="topbar-dropdown" id="notifDropdown">
+            <div class="td-head">Notifications</div>
+            <div class="td-body" id="notifDropdownBody">
+              <div class="td-empty">👉 No notifications yet</div>
+            </div>
+          </div>
+        </div>
+        <div class="icon-btn-wrap" style="position:relative;">
+          <div class="icon-btn" onclick="toggleDropdown('msgDropdown')"><i class="fa-regular fa-envelope"></i><span class="dot" id="msgDot" style="display:none;"></span></div>
+          <div class="topbar-dropdown" id="msgDropdown">
+            <div class="td-head">Messages</div>
+            <div class="td-body" id="msgDropdownBody">
+              <div class="td-empty">👉 No messages yet — connect with a wholesaler to start chatting</div>
+            </div>
+          </div>
+        </div>
         <div class="topbar-profile">
           <div class="avatar-sm" id="topbarAvatar">--</div>
           <div>
@@ -564,27 +620,27 @@ tbody tr:hover{background:#fafcfe;}
         <div class="stats-grid">
           <div class="stat-card">
             <div class="top"><div class="icon-wrap amber"><i class="fa-solid fa-triangle-exclamation"></i></div></div>
-            <div class="value">7</div>
+            <div class="value" id="statLowStock">0</div>
             <div class="label">Low stock items</div>
-            <div class="trend down"><i class="fa-solid fa-arrow-down"></i> 2 more than last week</div>
+            <div class="trend flat" id="statLowStockTrend">No data yet</div>
           </div>
           <div class="stat-card">
             <div class="top"><div class="icon-wrap blue"><i class="fa-solid fa-box"></i></div></div>
-            <div class="value">12</div>
+            <div class="value" id="statPendingOrders">0</div>
             <div class="label">Pending orders</div>
-            <div class="trend flat"><i class="fa-solid fa-minus"></i> Same as yesterday</div>
+            <div class="trend flat" id="statPendingTrend">No data yet</div>
           </div>
           <div class="stat-card">
             <div class="top"><div class="icon-wrap green"><i class="fa-solid fa-sack-dollar"></i></div></div>
-            <div class="value">$4,280</div>
+            <div class="value" id="statSpend">$0</div>
             <div class="label">Spend this month</div>
-            <div class="trend up"><i class="fa-solid fa-arrow-up"></i> 8% vs last month</div>
+            <div class="trend flat" id="statSpendTrend">No data yet</div>
           </div>
           <div class="stat-card">
             <div class="top"><div class="icon-wrap navy"><i class="fa-solid fa-industry"></i></div></div>
-            <div class="value">18</div>
+            <div class="value" id="statSuppliers">0</div>
             <div class="label">Active suppliers</div>
-            <div class="trend up"><i class="fa-solid fa-arrow-up"></i> 3 new this month</div>
+            <div class="trend flat" id="statSuppliersTrend">No data yet</div>
           </div>
         </div>
 
@@ -594,7 +650,7 @@ tbody tr:hover{background:#fafcfe;}
             <div class="quick-actions">
               <button class="qa-card" onclick="goTo('search')"><i class="fa-solid fa-magnifying-glass"></i><div class="t">Search a medicine</div><div class="s">Compare suppliers instantly</div></button>
               <button class="qa-card" onclick="goTo('chatroom')"><i class="fa-solid fa-comments"></i><div class="t">Ask other pharmacies</div><div class="s">Post an urgent request</div></button>
-              <button class="qa-card" onclick="goTo('orders')"><i class="fa-solid fa-receipt"></i><div class="t">Review pending orders</div><div class="s">12 awaiting confirmation</div></button>
+              <button class="qa-card" onclick="goTo('orders')"><i class="fa-solid fa-receipt"></i><div class="t">Review pending orders</div><div class="s" id="qaPendingText">View your orders</div></button>
               <button class="qa-card" onclick="goTo('assistant')"><i class="fa-solid fa-sparkles"></i><div class="t">Ask the AI Assistant</div><div class="s">Stock &amp; ordering questions</div></button>
             </div>
           </div>
@@ -608,7 +664,7 @@ tbody tr:hover{background:#fafcfe;}
             </div>
             <div class="panel-body" id="liveAlertsPanel">
               <div style="text-align:center; color:var(--text-mut); padding:30px 16px;">
-                <i class="fa-solid fa-hand-point-right" style="font-size:26px; color:var(--primary); margin-bottom:10px; display:block;"></i>
+                <div style="font-size:26px; margin-bottom:10px;">👉</div>
                 No alerts yet — this fills up automatically once you have orders, stock, and suppliers connected.
               </div>
             </div>
@@ -620,10 +676,10 @@ tbody tr:hover{background:#fafcfe;}
             </div>
             <div class="panel-body" style="padding-top:8px;" id="stockoutPanel">
               <div style="text-align:center; color:var(--text-mut); padding:20px 16px;">
-                <i class="fa-solid fa-hand-point-right" style="font-size:26px; color:var(--primary); margin-bottom:10px; display:block;"></i>
+                <div style="font-size:26px; margin-bottom:10px;">👉</div>
                 No predictions yet — place a few orders and we'll start forecasting your stock-out dates.
               </div>
-              <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="goTo('search')"><i class="fa-solid fa-hand-point-right"></i>&nbsp; Search &amp; place your first order</button>
+              <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="goTo('search')">👉 Search &amp; place your first order</button>
             </div>
           </div>
         </div>
@@ -644,20 +700,33 @@ tbody tr:hover{background:#fafcfe;}
           <p>Prices, stock levels and delivery estimates update live from every registered wholesaler.</p>
           <div class="search-box-big">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input id="medSearchInput" type="text" placeholder="e.g. Paracetamol 500mg" value="Paracetamol 500mg">
+            <input id="medSearchInput" type="text" placeholder="e.g. Paracetamol 500mg" value="">
             <button class="btn btn-primary" onclick="runSearch()">Search</button>
           </div>
           <div class="chips">
-            <span class="chip">Paracetamol 500mg</span><span class="chip">Amoxicillin 500mg</span>
-            <span class="chip">Atorvastatin 20mg</span><span class="chip">Cetirizine 10mg</span>
+            <span class="chip" onclick="quickSearch('Paracetamol 500mg')">Paracetamol 500mg</span><span class="chip" onclick="quickSearch('Amoxicillin 500mg')">Amoxicillin 500mg</span>
+            <span class="chip" onclick="quickSearch('Atorvastatin 20mg')">Atorvastatin 20mg</span><span class="chip" onclick="quickSearch('Cetirizine 10mg')">Cetirizine 10mg</span>
           </div>
         </div>
 
-        <div class="result-medname">
-          <h3 id="resultTitle">Paracetamol 500mg — 3 suppliers in stock</h3>
-          <span class="count">Sorted by price</span>
+        <div class="sort-filter-bar" id="sortFilterBar" style="display:none;">
+          <span class="sf-label">Sort by:</span>
+          <button class="sort-btn active" data-sort="price_low" onclick="setSortMode(this,'price_low')"><i class="fa-solid fa-arrow-down-short-wide"></i> Price: Lowest first</button>
+          <button class="sort-btn" data-sort="price_high" onclick="setSortMode(this,'price_high')"><i class="fa-solid fa-arrow-up-wide-short"></i> Price: Highest first</button>
+          <button class="sort-btn" data-sort="fastest" onclick="setSortMode(this,'fastest')"><i class="fa-solid fa-truck-fast"></i> Fastest delivery</button>
+          <button class="sort-btn" data-sort="stock" onclick="setSortMode(this,'stock')"><i class="fa-solid fa-boxes-stacked"></i> Most in stock</button>
         </div>
-        <div class="supplier-cards" id="supplierResults"></div>
+
+        <div class="result-medname">
+          <h3 id="resultTitle">Search for a medicine above to compare suppliers</h3>
+          <span class="count" id="sortedByLabel"></span>
+        </div>
+        <div class="supplier-cards" id="supplierResults">
+          <div style="text-align:center; color:var(--text-mut); padding:40px 20px; grid-column:1/-1;">
+            <div style="font-size:26px; margin-bottom:10px;">👉</div>
+            Try one of the quick suggestions above, or type a medicine name and hit Search.
+          </div>
+        </div>
       </section>
 
       <!-- ============ VIEW: PRODUCT CATALOGUE ============ -->
@@ -747,6 +816,11 @@ tbody tr:hover{background:#fafcfe;}
         </div>
       </section>
 
+      <!-- Floating confirm-receipt bar — always reachable while on the tracking view -->
+      <div id="floatingConfirmBar" class="floating-confirm-bar">
+        <button class="btn btn-primary" id="floatingConfirmBtn" onclick="confirmReceipt()"><i class="fa-solid fa-check-double"></i> Confirm receipt</button>
+      </div>
+
       <!-- ============ VIEW: APPLICATIONS ============ -->
       <section class="view" id="view-applications">
         <div class="panel">
@@ -811,7 +885,7 @@ tbody tr:hover{background:#fafcfe;}
               <div class="chat-head"><i class="fa-solid fa-people-group" style="color:var(--primary)"></i><div><div class="t">General</div><div class="s">Region-wide pharmacy chat</div></div></div>
               <div class="chat-body" id="roomChatBody">
                 <div style="text-align:center; color:var(--text-mut); padding:30px 16px;">
-                  <i class="fa-solid fa-hand-point-right" style="font-size:24px; color:var(--primary); margin-bottom:8px; display:block;"></i>
+                  <div style="font-size:24px; margin-bottom:8px;">👉</div>
                   No messages yet in this room — be the first to post.
                 </div>
               </div>
@@ -837,7 +911,7 @@ tbody tr:hover{background:#fafcfe;}
                 This assistant can help with anything inside NexaHealth for your account — prices, suppliers, delivery, payments, orders, catalogue, procurement, applications, invoices, settings — but stays within the app.
               </div>
               <div class="chat-body" id="aiChatBody">
-                <div class="msg ai">Hi Tendai — I'm your NexaHealth assistant. Ask me things like "which supplier is cheapest for Amoxicillin including delivery", "what payment methods can I use", "what's about to run out", or "how does pay-after-delivery work". What would you like to know?</div>
+                <div class="msg ai" id="aiGreeting">Hi — I'm your NexaHealth assistant. Ask me things like "which supplier is cheapest for Amoxicillin including delivery", "what payment methods can I use", "what's about to run out", or "how does pay-after-delivery work". What would you like to know?</div>
               </div>
               <div class="chat-input ai-input">
                 <button id="voiceBtn" class="voice-btn" onclick="toggleVoiceInput()" title="Voice input"><i class="fa-solid fa-microphone"></i></button>
@@ -862,10 +936,10 @@ tbody tr:hover{background:#fafcfe;}
         </div>
 
         <div class="stats-grid">
-          <div class="stat-card"><div class="label">Total Spend</div><div class="value">$4,280</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 12%</div></div>
-          <div class="stat-card"><div class="label">Orders</div><div class="value">31</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 8%</div></div>
-          <div class="stat-card"><div class="label">Top Medicine</div><div class="value" style="font-size:18px;">Amoxicillin</div><div class="trend flat">124 units</div></div>
-          <div class="stat-card"><div class="label">Avg Order Value</div><div class="value">$138</div><div class="trend up"><i class="fa-solid fa-arrow-up"></i> 5%</div></div>
+          <div class="stat-card"><div class="label">Total Spend</div><div class="value" id="anTotalSpend">$0</div><div class="trend flat" id="anSpendTrend">No orders yet</div></div>
+          <div class="stat-card"><div class="label">Orders</div><div class="value" id="anOrderCount">0</div><div class="trend flat" id="anOrdersTrend">No orders yet</div></div>
+          <div class="stat-card"><div class="label">Top Medicine</div><div class="value" id="anTopMed" style="font-size:18px;">—</div><div class="trend flat" id="anTopMedTrend">No data yet</div></div>
+          <div class="stat-card"><div class="label">Avg Order Value</div><div class="value" id="anAvgOrder">$0</div><div class="trend flat" id="anAvgTrend">No orders yet</div></div>
         </div>
 
         <div class="two-col">
@@ -1107,6 +1181,7 @@ async function loadRealData(){
     document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.length ? MOCK_ORDERS.map(o=>orderRow(o,true)).join('') : renderOrdersEmpty(7);
     if (typeof renderApplications === 'function') renderApplications('all');
     if (typeof renderSupplierChatList === 'function') renderSupplierChatList();
+    if (typeof populateDropdowns === 'function') populateDropdowns();
 
     // Real nav badge counts — only show if there's actually something to flag
     const activeOrders = MOCK_ORDERS.filter(o=>['pending','confirmed','transit'].includes(o.status)).length;
@@ -1118,6 +1193,34 @@ async function loadRealData(){
     if (ordersBadge) { ordersBadge.textContent = activeOrders; ordersBadge.style.display = activeOrders ? 'inline-flex' : 'none'; }
     if (invoicesBadge) { invoicesBadge.textContent = dueInvoices; invoicesBadge.style.display = dueInvoices ? 'inline-flex' : 'none'; }
     if (appsBadge) { appsBadge.textContent = pendingApps; appsBadge.style.display = pendingApps ? 'inline-flex' : 'none'; }
+
+    // Real dashboard stat cards (top of page)
+    const pendingOrdersCount = MOCK_ORDERS.filter(o=>o.status==='pending').length;
+    const spendThisMonth = MOCK_ORDERS.reduce((sum,o)=>sum + (parseFloat((o.total||'$0').replace(/[^0-9.]/g,''))||0), 0);
+    const connectedSuppliersCount = getConnectedSuppliers().length;
+
+    const elLowStock = document.getElementById('statLowStock');
+    const elPending = document.getElementById('statPendingOrders');
+    const elSpend = document.getElementById('statSpend');
+    const elSuppliers = document.getElementById('statSuppliers');
+    const elPendingTrend = document.getElementById('statPendingTrend');
+    const elSuppliersTrend = document.getElementById('statSuppliersTrend');
+    const qaPendingText = document.getElementById('qaPendingText');
+
+    if (elLowStock) elLowStock.textContent = PROCUREMENT_ITEMS.filter(p=>p.stockLevel==='low').length;
+    if (elPending) elPending.textContent = pendingOrdersCount;
+    if (elSpend) elSpend.textContent = '$' + spendThisMonth.toFixed(0);
+    if (elSuppliers) elSuppliers.textContent = connectedSuppliersCount;
+    if (elPendingTrend) elPendingTrend.textContent = pendingOrdersCount ? `${pendingOrdersCount} awaiting confirmation` : 'No pending orders';
+    if (elSuppliersTrend) elSuppliersTrend.textContent = connectedSuppliersCount ? `${connectedSuppliersCount} connected` : 'None yet — apply to get started';
+    if (qaPendingText) qaPendingText.textContent = pendingOrdersCount ? `${pendingOrdersCount} awaiting confirmation` : 'No pending orders';
+
+    // Personalize AI greeting with real first name
+    const aiGreetingEl = document.getElementById('aiGreeting');
+    if (aiGreetingEl) {
+      const firstName = (getCurrentUser().fullName || '').split(' ')[0];
+      if (firstName) aiGreetingEl.innerHTML = aiGreetingEl.innerHTML.replace('Hi —', `Hi ${firstName} —`);
+    }
   } catch (err) {
     console.error('Failed to load real data, dashboard is showing mock data as fallback:', err.message);
   }
@@ -1180,7 +1283,7 @@ function renderSupplierChatList(){
   document.getElementById('supplierChatList').innerHTML = suppliers.length ? suppliers.map(s=>`
     <div class="chat-list-item ${s===currentSupplierChat?'active':''}" onclick="openSupplierChat('${s.replace(/'/g,"\\'")}')">
       <div class="cn">${s}</div><div class="cm">${lastMsgPreview(s)}</div>
-    </div>`).join('') : `<div style="text-align:center; color:var(--text-mut); padding:30px 16px; font-size:13px;"><i class="fa-solid fa-hand-point-right" style="font-size:20px; color:var(--primary); margin-bottom:8px; display:block;"></i>No connected suppliers yet.<br>Apply to a wholesaler first.</div>`;
+    </div>`).join('') : `<div style="text-align:center; color:var(--text-mut); padding:30px 16px; font-size:13px;"><div style="font-size:20px; margin-bottom:8px;">👉</div>No connected suppliers yet.<br>Apply to a wholesaler first.</div>`;
 }
 function openSupplierChat(name){
   currentSupplierChat = name;
@@ -1244,6 +1347,51 @@ function handleLogout(){
   localStorage.removeItem('nexa_user');
   window.location.href = '/';
 }
+
+/* ---- Notification bell + message dropdown ---- */
+function toggleDropdown(id){
+  const el = document.getElementById(id);
+  const isOpen = el.classList.contains('show');
+  document.querySelectorAll('.topbar-dropdown').forEach(d=>d.classList.remove('show'));
+  if(!isOpen) el.classList.add('show');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.icon-btn-wrap')){
+    document.querySelectorAll('.topbar-dropdown').forEach(d=>d.classList.remove('show'));
+  }
+});
+function populateDropdowns(){
+  // Notifications: real pending order / due invoice / pending application counts
+  const notifs = [];
+  const pendingOrders = MOCK_ORDERS.filter(o=>o.status==='pending').length;
+  const dueInvoices = INVOICES.filter(i=>i.status!=='paid').length;
+  const pendingApps = APPLICATIONS.filter(a=>a.status==='pending').length;
+  if(pendingOrders) notifs.push({title:`${pendingOrders} order(s) awaiting confirmation`, sub:'Tap to view your orders', action:"goTo('orders')"});
+  if(dueInvoices) notifs.push({title:`${dueInvoices} invoice(s) due`, sub:'Tap to view invoices', action:"goTo('invoices')"});
+  if(pendingApps) notifs.push({title:`${pendingApps} application(s) pending review`, sub:'Tap to view applications', action:"goTo('applications')"});
+
+  const notifBody = document.getElementById('notifDropdownBody');
+  const notifDot = document.getElementById('notifDot');
+  if(notifs.length){
+    notifBody.innerHTML = notifs.map(n=>`<div class="td-item" onclick="${n.action}; toggleDropdown('notifDropdown');"><div class="td-title">${n.title}</div><div class="td-sub">${n.sub}</div></div>`).join('');
+    notifDot.style.display = 'block';
+  } else {
+    notifBody.innerHTML = `<div class="td-empty">👉 No notifications yet</div>`;
+    notifDot.style.display = 'none';
+  }
+
+  // Messages: real approved supplier conversations with unread indicator
+  const connected = getConnectedSuppliers();
+  const msgBody = document.getElementById('msgDropdownBody');
+  const msgDot = document.getElementById('msgDot');
+  if(connected.length){
+    msgBody.innerHTML = connected.map(name=>`<div class="td-item" onclick="goTo('supplierchat'); openSupplierChat('${name.replace(/'/g,"\\'")}'); toggleDropdown('msgDropdown');"><div class="td-title">${name}</div><div class="td-sub">${lastMsgPreview(name)}</div></div>`).join('');
+    msgDot.style.display = 'none'; // no unread tracking yet — dot only shows for real unread counts once built
+  } else {
+    msgBody.innerHTML = `<div class="td-empty">👉 No messages yet — connect with a wholesaler to start chatting</div>`;
+    msgDot.style.display = 'none';
+  }
+}
 (function authGuard(){
   if (!getAuthToken()) {
     window.location.href = '/';
@@ -1303,6 +1451,7 @@ function goTo(view){
   document.getElementById('pageSub').textContent = titles[view][1];
   document.getElementById('sidebar').classList.remove('open');
   if(view==='tracking') { renderTracking(); setTimeout(initMap, 50); }
+  else { document.getElementById('floatingConfirmBar')?.classList.remove('show'); }
   if(view==='analytics') setTimeout(renderAnalytics, 30);
   if(view==='supplierchat') {
     renderSupplierChatList();
@@ -1314,18 +1463,62 @@ document.getElementById('menuToggle').addEventListener('click',()=>document.getE
 
 /* ---- search & supplier comparison ---- */
 let currentMedKey = 'paracetamol 500mg';
+let currentSortMode = 'price_low';
+function quickSearch(term){
+  document.getElementById('medSearchInput').value = term;
+  runSearch();
+}
+function setSortMode(btn, mode){
+  currentSortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  runSearch(true); // true = re-render existing results with new sort, don't reset "no results" messaging
+}
+function sortSupplierList(list, mode){
+  const sorted = [...list];
+  if(mode==='price_low') sorted.sort((a,b)=>a.price-b.price);
+  else if(mode==='price_high') sorted.sort((a,b)=>b.price-a.price);
+  else if(mode==='fastest') sorted.sort((a,b)=>{
+    const rank = s => !s.hasDelivery ? 99 : (s.eta||'').toLowerCase().includes('today') ? 0 : (s.eta||'').toLowerCase().includes('tomorrow') ? 1 : 2;
+    return rank(a)-rank(b);
+  });
+  else if(mode==='stock') sorted.sort((a,b)=>b.qty-a.qty);
+  return sorted;
+}
 function runSearch(){
-  const q = document.getElementById('medSearchInput').value.trim().toLowerCase();
-  currentMedKey = MOCK_SUPPLIERS[q] ? q : (Object.keys(MOCK_SUPPLIERS)[0] || null);
-  const list = currentMedKey ? MOCK_SUPPLIERS[currentMedKey] : [];
-  if (!list.length) {
-    document.getElementById('resultTitle').textContent = `${document.getElementById('medSearchInput').value} — no suppliers found yet`;
-    document.getElementById('supplierResults').innerHTML = `<div style="text-align:center; color:var(--text-mut); padding:40px 20px;"><i class="fa-solid fa-boxes-stacked" style="font-size:32px; margin-bottom:12px; display:block; color:var(--text-faint);"></i>No wholesalers have listed this product yet.<br>Check back soon, or try a different search.</div>`;
+  const rawInput = document.getElementById('medSearchInput').value.trim();
+  const q = rawInput.toLowerCase();
+  const sortBar = document.getElementById('sortFilterBar');
+
+  if(!rawInput){
+    sortBar.style.display = 'none';
+    document.getElementById('resultTitle').textContent = 'Search for a medicine above to compare suppliers';
+    document.getElementById('sortedByLabel').textContent = '';
+    document.getElementById('supplierResults').innerHTML = `<div style="text-align:center; color:var(--text-mut); padding:40px 20px; grid-column:1/-1;"><div style="font-size:26px; margin-bottom:10px;">👉</div>Try one of the quick suggestions above, or type a medicine name and hit Search.</div>`;
     return;
   }
-  document.getElementById('resultTitle').textContent = `${document.getElementById('medSearchInput').value} — ${list.length} suppliers in stock`;
-  const cheapest = Math.min(...list.map(s=>s.price));
-  document.getElementById('supplierResults').innerHTML = list.map((s,i)=>`
+
+  currentMedKey = MOCK_SUPPLIERS[q] ? q : null;
+  const list = currentMedKey ? MOCK_SUPPLIERS[currentMedKey] : [];
+
+  if (!list.length) {
+    sortBar.style.display = 'none';
+    document.getElementById('resultTitle').textContent = `${rawInput} — no suppliers found yet`;
+    document.getElementById('sortedByLabel').textContent = '';
+    document.getElementById('supplierResults').innerHTML = `<div style="text-align:center; color:var(--text-mut); padding:40px 20px; grid-column:1/-1;"><i class="fa-solid fa-boxes-stacked" style="font-size:32px; margin-bottom:12px; display:block; color:var(--text-faint);"></i>No wholesalers have listed this product yet.<br>Check back soon, or try a different search.</div>`;
+    return;
+  }
+
+  sortBar.style.display = 'flex';
+  const sortedList = sortSupplierList(list, currentSortMode);
+  const sortLabels = {price_low:'Price: lowest first', price_high:'Price: highest first', fastest:'Fastest delivery', stock:'Most in stock'};
+  document.getElementById('resultTitle').textContent = `${rawInput} — ${sortedList.length} suppliers in stock`;
+  document.getElementById('sortedByLabel').textContent = `Sorted by ${sortLabels[currentSortMode]}`;
+
+  const cheapest = Math.min(...sortedList.map(s=>s.price));
+  document.getElementById('supplierResults').innerHTML = sortedList.map((s,i)=>{
+    const originalIndex = list.indexOf(s);
+    return `
     <div class="supplier-card ${s.price===cheapest?'best':''}">
       <div class="sname">${s.name}</div>
       <div class="sloc"><i class="fa-solid fa-location-dot"></i> ${s.loc}</div>
@@ -1340,16 +1533,12 @@ function runSearch(){
         ${s.hasDelivery ? (s.deliveryFee===0 ? 'Free delivery' : '$'+s.deliveryFee.toFixed(2)+' delivery fee') : 'No delivery — collect in person'}
       </div>
       <div class="supplier-card-actions">
-        <button class="btn btn-outline btn-sm" style="flex:1" onclick='viewProduct(${JSON.stringify(currentMedKey)}, ${i})'><i class="fa-regular fa-eye"></i> View product</button>
-        <button class="btn btn-primary btn-sm" style="flex:1" onclick='addToCart(${JSON.stringify(currentMedKey)}, ${i})'><i class="fa-solid fa-cart-plus"></i> Add</button>
+        <button class="btn btn-outline btn-sm" style="flex:1" onclick='viewProduct(${JSON.stringify(currentMedKey)}, ${originalIndex})'><i class="fa-regular fa-eye"></i> View product</button>
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick='addToCart(${JSON.stringify(currentMedKey)}, ${originalIndex})'><i class="fa-solid fa-cart-plus"></i> Add</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
-  document.getElementById('medSearchInput').value = c.textContent;
-  runSearch();
-}));
-runSearch();
 
 /* ---- generic modal helpers ---- */
 function openModal(id){ document.getElementById(id).classList.add('show'); }
@@ -1674,7 +1863,17 @@ function renderTracking(){
   document.getElementById('callDriverBtn').style.display = noDelivery ? 'none' : 'inline-flex';
   if(lastOrder){
     document.getElementById('trackTitle').textContent = `Order #${lastOrder.id} — ${lastOrder.items}`;
-    document.getElementById('trackSub').textContent = `${lastOrder.supplier} · ${noDelivery ? 'Pickup order' : 'ETA 12 min'}`;
+    document.getElementById('trackSub').textContent = `${lastOrder.supplier} · ${noDelivery ? 'Pickup order' : 'Awaiting delivery'}`;
+  }
+  // Floating confirm bar — visible whenever there's an order being tracked and it isn't delivered yet
+  const bar = document.getElementById('floatingConfirmBar');
+  const btn = document.getElementById('floatingConfirmBtn');
+  const alreadyDelivered = lastOrder && lastOrder.status === 'delivered';
+  if(lastOrder && !alreadyDelivered){
+    btn.innerHTML = noDelivery ? '<i class="fa-solid fa-check-double"></i> Mark as collected' : '<i class="fa-solid fa-check-double"></i> Confirm receipt';
+    bar.classList.add('show');
+  } else {
+    bar.classList.remove('show');
   }
 }
 
@@ -1685,6 +1884,7 @@ function markOrderDelivered(){
   if(stored) stored.status = 'delivered';
   document.getElementById('recentOrdersBody').innerHTML = MOCK_ORDERS.slice(0,4).map(o=>orderRow(o,false)).join('');
   document.getElementById('allOrdersBody').innerHTML = MOCK_ORDERS.map(o=>orderRow(o,true)).join('');
+  document.getElementById('floatingConfirmBar')?.classList.remove('show');
 }
 
 async function confirmReceipt(){
@@ -1912,41 +2112,93 @@ function initMap(){
   }catch(e){ /* Mapbox token not set yet */ }
 }
 
-/* ---- Analytics (lightweight, dependency-free charts) ---- */
+/* ---- Analytics — built entirely from real MOCK_ORDERS (populated by loadRealData) ---- */
 function renderAnalytics(){
-  const months = [['Feb',18],['Mar',24],['Apr',20],['May',31],['Jun',27],['Jul',35]];
-  const max = Math.max(...months.map(m=>m[1]));
-  document.getElementById('ordersBarChart').innerHTML = months.map(([m,v])=>`
-    <div class="bar-col"><div class="bar" style="height:${(v/max*100)}%"></div><div class="bl">${m}</div></div>`).join('');
+  const orders = MOCK_ORDERS;
+  const emptyMsg = (text) => `<div style="text-align:center; color:var(--text-mut); padding:30px 16px;"><div style="font-size:22px; margin-bottom:8px;">👉</div>${text}</div>`;
 
-  const topSelling = [
-    {name:'Amoxicillin 500mg', units:124},
-    {name:'Paracetamol 500mg', units:98},
-    {name:'ORS Sachets', units:76},
-    {name:'Atorvastatin 20mg', units:52},
-  ];
-  document.getElementById('topSellingList').innerHTML = topSelling.map(t=>`
-    <div class="alert-row"><div class="alert-text" style="flex:1;"><div class="t1">${t.name}</div></div><div style="font-weight:700; color:var(--primary-dark);">${t.units} units</div></div>`).join('');
+  // Stat cards
+  const totalSpend = orders.reduce((sum,o)=>sum + (parseFloat((o.total||'$0').replace(/[^0-9.]/g,''))||0), 0);
+  const avgOrder = orders.length ? totalSpend / orders.length : 0;
+  document.getElementById('anTotalSpend').textContent = '$' + totalSpend.toFixed(0);
+  document.getElementById('anOrderCount').textContent = orders.length;
+  document.getElementById('anAvgOrder').textContent = '$' + avgOrder.toFixed(0);
+  document.getElementById('anSpendTrend').textContent = orders.length ? `${orders.length} order(s) placed` : 'No orders yet';
+  document.getElementById('anOrdersTrend').textContent = orders.length ? 'This period' : 'No orders yet';
+  document.getElementById('anAvgTrend').textContent = orders.length ? 'Per order' : 'No orders yet';
 
-  const perf = [
-    {name:'MedPharm Wholesale', pct:95, color:'#16a34a'},
-    {name:'ZimDrug Distributors', pct:91, color:'#0088cc'},
-    {name:'HealthLink Suppliers', pct:78, color:'#f59e0b'},
-    {name:'PharmaCorp Zimbabwe', pct:66, color:'#dc2626'},
-  ];
-  document.getElementById('supplierPerf').innerHTML = perf.map(p=>`
-    <div class="supplier-perf-row">
-      <div class="sp-name">${p.name}</div>
-      <div class="sp-bar-bg"><div class="sp-bar-fill" style="width:${p.pct}%; background:${p.color}"></div></div>
-      <div class="sp-pct">${p.pct}%</div>
-    </div>`).join('');
+  // Top medicine — parse from items text (e.g. "Amoxicillin 500mg ×500, Paracetamol ×2")
+  const medicineCounts = {};
+  orders.forEach(o=>{
+    (o.items||'').split(',').forEach(part=>{
+      const m = part.trim().match(/^(.+?)\s*×(\d+)/);
+      if(m){ const name=m[1].trim(); const qty=parseInt(m[2],10); medicineCounts[name]=(medicineCounts[name]||0)+qty; }
+    });
+  });
+  const sortedMeds = Object.entries(medicineCounts).sort((a,b)=>b[1]-a[1]);
+  if(sortedMeds.length){
+    document.getElementById('anTopMed').textContent = sortedMeds[0][0];
+    document.getElementById('anTopMedTrend').textContent = `${sortedMeds[0][1]} units`;
+  } else {
+    document.getElementById('anTopMed').textContent = '—';
+    document.getElementById('anTopMedTrend').textContent = 'No data yet';
+  }
 
-  const donutData = [{l:'Amoxicillin',v:34,c:'#0088cc'},{l:'Paracetamol',v:28,c:'#00b8f0'},{l:'ORS Sachets',v:20,c:'#7fd4ec'},{l:'Other',v:18,c:'#d6ecf9'}];
-  let acc=0;
-  const gradient = donutData.map(d=>{ const start=acc; acc+=d.v; return `${d.c} ${start}% ${acc}%`; }).join(',');
-  document.getElementById('topMedDonut').style.background = `conic-gradient(${gradient})`;
-  document.getElementById('donutLegend').innerHTML = donutData.map(d=>`
-    <div class="legend-item"><span class="legend-dot" style="background:${d.c}"></span>${d.l} — ${d.v}%</div>`).join('');
+  // Orders bar chart — group by month from real order dates
+  if(!orders.length){
+    document.getElementById('ordersBarChart').innerHTML = emptyMsg('No orders yet — this chart fills in once you start ordering.');
+  } else {
+    const byMonth = {};
+    orders.forEach(o=>{
+      const d = new Date(o.date);
+      const key = isNaN(d) ? 'Unknown' : d.toLocaleString('en-US',{month:'short'});
+      byMonth[key] = (byMonth[key]||0) + 1;
+    });
+    const entries = Object.entries(byMonth);
+    const max = Math.max(...entries.map(e=>e[1]), 1);
+    document.getElementById('ordersBarChart').innerHTML = entries.map(([m,v])=>`
+      <div class="bar-col"><div class="bar" style="height:${(v/max*100)}%"></div><div class="bl">${m}</div></div>`).join('');
+  }
+
+  // Top selling list — real medicine counts
+  if(sortedMeds.length){
+    document.getElementById('topSellingList').innerHTML = sortedMeds.slice(0,6).map(([name,units])=>`
+      <div class="alert-row"><div class="alert-text" style="flex:1;"><div class="t1">${name}</div></div><div style="font-weight:700; color:var(--primary-dark);">${units} units</div></div>`).join('');
+  } else {
+    document.getElementById('topSellingList').innerHTML = emptyMsg('No orders yet — top medicines will appear here.');
+  }
+
+  // Supplier performance — real connected suppliers, no fake on-time percentages
+  // (on-time delivery tracking isn't built yet — showing fake percentages would be misleading)
+  const connected = getConnectedSuppliers();
+  if(connected.length){
+    document.getElementById('supplierPerf').innerHTML = connected.map(name=>`
+      <div class="supplier-perf-row">
+        <div class="sp-name">${name}</div>
+        <div class="sp-bar-bg"><div class="sp-bar-fill" style="width:0%; background:var(--border)"></div></div>
+        <div class="sp-pct" style="color:var(--text-mut); font-size:12px;">Not tracked yet</div>
+      </div>`).join('');
+  } else {
+    document.getElementById('supplierPerf').innerHTML = emptyMsg('No connected suppliers yet — apply to a wholesaler to get started.');
+  }
+
+  // Donut chart — real medicine distribution
+  if(sortedMeds.length){
+    const totalUnits = sortedMeds.reduce((s,[,v])=>s+v, 0);
+    const colors = ['#0088cc','#00b8f0','#7fd4ec','#d6ecf9','#a8c5d6'];
+    const top4 = sortedMeds.slice(0,4);
+    const otherUnits = sortedMeds.slice(4).reduce((s,[,v])=>s+v, 0);
+    const donutData = top4.map(([name,units],i)=>({l:name, v:Math.round(units/totalUnits*100), c:colors[i]}));
+    if(otherUnits>0) donutData.push({l:'Other', v:Math.round(otherUnits/totalUnits*100), c:colors[4]});
+    let acc=0;
+    const gradient = donutData.map(d=>{ const start=acc; acc+=d.v; return `${d.c} ${start}% ${acc}%`; }).join(',');
+    document.getElementById('topMedDonut').style.background = `conic-gradient(${gradient})`;
+    document.getElementById('donutLegend').innerHTML = donutData.map(d=>`
+      <div class="legend-item"><span class="legend-dot" style="background:${d.c}"></span>${d.l} — ${d.v}%</div>`).join('');
+  } else {
+    document.getElementById('topMedDonut').style.background = 'var(--border)';
+    document.getElementById('donutLegend').innerHTML = `<div style="color:var(--text-mut); font-size:12.5px;">No data yet</div>`;
+  }
 }
 </script>
 </body>
