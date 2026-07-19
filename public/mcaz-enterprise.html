@@ -325,16 +325,18 @@ input,select,textarea{font-family:inherit;}
     <a class="nav-item" data-view="transactions"><i class="fa-solid fa-exchange-alt"></i>All Transactions</a>
     <a class="nav-item" data-view="trace"><i class="fa-solid fa-route"></i>Supply Chain Trace</a>
     <a class="nav-item" data-view="recalls"><i class="fa-solid fa-triangle-exclamation"></i>Recall Command<span class="nbadge" id="navRecallBadge" style="display:none;">0</span></a>
-    <a class="nav-item" data-view="complaints"><i class="fa-solid fa-circle-exclamation"></i>Complaints<span class="nbadge warn">5</span></a>
+    <a class="nav-item" data-view="complaints"><i class="fa-solid fa-circle-exclamation"></i>Complaints<span class="nbadge warn" id="navComplaintsBadge" style="display:none;">0</span></a>
     <div class="nav-group-label">Entities</div>
     <a class="nav-item" data-view="entities"><i class="fa-solid fa-building-shield"></i>Entity Registry</a>
-    <a class="nav-item" data-view="licences"><i class="fa-solid fa-certificate"></i>Licence Monitor<span class="nbadge warn">4</span></a>
+    <a class="nav-item" data-view="licences"><i class="fa-solid fa-certificate"></i>Licence Monitor<span class="nbadge warn" id="navLicenceBadge" style="display:none;">0</span></a>
     <a class="nav-item" data-view="inspections"><i class="fa-solid fa-clipboard-check"></i>Inspections</a>
     <div class="nav-group-label">Intelligence</div>
     <a class="nav-item" data-view="ai"><i class="fa-solid fa-brain"></i>AI Intelligence<span class="nbadge" id="navAiBadge" style="display:none;">0</span></a>
     <a class="nav-item" data-view="analytics"><i class="fa-solid fa-chart-line"></i>Analytics</a>
     <a class="nav-item" data-view="audit"><i class="fa-solid fa-shield-check"></i>Audit Trail</a>
     <a class="nav-item" data-view="qr"><i class="fa-solid fa-qrcode"></i>QR / Barcode</a>
+    <div class="nav-group-label">Administration</div>
+    <a class="nav-item" href="/admin-dashboard.html" target="_blank" rel="noopener"><i class="fa-solid fa-user-check"></i>User Approvals</a>
   </nav>
   <div class="sidebar-foot">
     <div class="foot-avatar" id="sidebarAvatar">--</div>
@@ -924,6 +926,9 @@ function renderRecalls(){
 
 /* ── COMPLAINTS ─────────────────────────────────────────────── */
 function renderComp(f){
+  const openComplaints = D.complaints.filter(c=>c.s==='open'||c.s==='investigating').length;
+  const navComplaintsBadge = document.getElementById('navComplaintsBadge');
+  if(navComplaintsBadge){ navComplaintsBadge.textContent = openComplaints; navComplaintsBadge.style.display = openComplaints ? 'inline-flex' : 'none'; }
   const rows=f==='all'?D.complaints:D.complaints.filter(c=>c.s===f);
   const pc={critical:'var(--danger)',high:'var(--warning)',medium:'var(--primary)',low:'var(--text-faint)'};
   document.getElementById('compBody').innerHTML=rows.map(c=>`
@@ -975,6 +980,9 @@ renderEntities('all');
 
 /* ── LICENCES ───────────────────────────────────────────────── */
 function renderLic(f){
+  const urgentLicences = D.entities.filter(e=>e.days<=30).length;
+  const navLicenceBadge = document.getElementById('navLicenceBadge');
+  if(navLicenceBadge){ navLicenceBadge.textContent = urgentLicences; navLicenceBadge.style.display = urgentLicences ? 'inline-flex' : 'none'; }
   let rows=D.entities;
   if(f==='critical')rows=rows.filter(e=>e.days<0);
   else if(f==='7')rows=rows.filter(e=>e.days>=0&&e.days<=7);
