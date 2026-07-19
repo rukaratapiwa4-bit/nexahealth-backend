@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
-<script src="https://js.puter.com/v2/"></script>
 <style>
 :root{
   --primary:#0088cc;--primary-dark:#0b2b44;--primary-light:#e6f4fb;--primary-soft:#d6ecf9;
@@ -29,7 +28,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 input,select,textarea{font-family:inherit;}
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-thumb{background:#c1d4e0;border-radius:6px;}
-.app{display:flex;min-height:100vh;}
+.app{display:flex;height:100vh;overflow:hidden;}
 
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);background:var(--primary-dark);color:#cfe3f0;position:fixed;top:0;left:0;bottom:0;z-index:100;display:flex;flex-direction:column;transition:transform .25s ease;}
@@ -54,7 +53,7 @@ input,select,textarea{font-family:inherit;}
 .foot-logout:hover{color:#fff;}
 
 /* MAIN */
-.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0;}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden;}
 
 /* LIVE TICKER */
 .live-ticker{background:var(--primary-dark);color:#9bbdd4;padding:7px 20px;display:flex;align-items:center;gap:14px;font-size:11.5px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;}
@@ -80,7 +79,7 @@ input,select,textarea{font-family:inherit;}
 .tp-org{font-size:11.5px;color:var(--text-mut);}
 
 /* CONTENT */
-.content{padding:26px;flex:1;}
+.content{padding:26px;flex:1;overflow-y:auto;min-height:0;}
 .view{display:none;}
 .view.active{display:block;animation:fadeUp .2s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
@@ -325,22 +324,22 @@ input,select,textarea{font-family:inherit;}
     <div class="nav-group-label">Surveillance</div>
     <a class="nav-item" data-view="transactions"><i class="fa-solid fa-exchange-alt"></i>All Transactions</a>
     <a class="nav-item" data-view="trace"><i class="fa-solid fa-route"></i>Supply Chain Trace</a>
-    <a class="nav-item" data-view="recalls"><i class="fa-solid fa-triangle-exclamation"></i>Recall Command<span class="nbadge">3</span></a>
+    <a class="nav-item" data-view="recalls"><i class="fa-solid fa-triangle-exclamation"></i>Recall Command<span class="nbadge" id="navRecallBadge" style="display:none;">0</span></a>
     <a class="nav-item" data-view="complaints"><i class="fa-solid fa-circle-exclamation"></i>Complaints<span class="nbadge warn">5</span></a>
     <div class="nav-group-label">Entities</div>
     <a class="nav-item" data-view="entities"><i class="fa-solid fa-building-shield"></i>Entity Registry</a>
     <a class="nav-item" data-view="licences"><i class="fa-solid fa-certificate"></i>Licence Monitor<span class="nbadge warn">4</span></a>
     <a class="nav-item" data-view="inspections"><i class="fa-solid fa-clipboard-check"></i>Inspections</a>
     <div class="nav-group-label">Intelligence</div>
-    <a class="nav-item" data-view="ai"><i class="fa-solid fa-brain"></i>AI Intelligence<span class="nbadge">7</span></a>
+    <a class="nav-item" data-view="ai"><i class="fa-solid fa-brain"></i>AI Intelligence<span class="nbadge" id="navAiBadge" style="display:none;">0</span></a>
     <a class="nav-item" data-view="analytics"><i class="fa-solid fa-chart-line"></i>Analytics</a>
     <a class="nav-item" data-view="audit"><i class="fa-solid fa-shield-check"></i>Audit Trail</a>
     <a class="nav-item" data-view="qr"><i class="fa-solid fa-qrcode"></i>QR / Barcode</a>
   </nav>
   <div class="sidebar-foot">
-    <div class="foot-avatar">DR</div>
-    <div><div class="foot-name">Dr. R. Ncube</div><div class="foot-sub">Senior Inspector · MCAZ</div></div>
-    <i class="fa-solid fa-right-from-bracket foot-logout"></i>
+    <div class="foot-avatar" id="sidebarAvatar">--</div>
+    <div><div class="foot-name" id="sidebarUserName">Loading...</div><div class="foot-sub" id="sidebarUserRole">MCAZ</div></div>
+    <i class="fa-solid fa-right-from-bracket foot-logout" onclick="handleLogout()"></i>
   </div>
 </aside>
 
@@ -351,9 +350,10 @@ input,select,textarea{font-family:inherit;}
 <div class="live-ticker">
   <div class="live-dot"></div>
   <span style="font-weight:700;color:#fff;white-space:nowrap;font-size:11px;">LIVE</span>
-  <div class="ticker-wrap">
-    <span class="ticker-inner">TX-8801: MedPharm → City Pharmacy, 500u Amoxicillin CLEARED &nbsp;|&nbsp; TX-8803: PharmaCorp → Sunrise FLAGGED risk 88/100 &nbsp;|&nbsp; ALERT: Batch #X9901 suspected counterfeit — Bulawayo &nbsp;|&nbsp; RECALL RC-001: 8/14 pharmacies confirmed &nbsp;|&nbsp; LICENCE EXPIRY: ZimDrug Distributors — 14 days &nbsp;|&nbsp; NEW COMPLAINT CMP-005: supply diversion, Midlands &nbsp;|&nbsp; INSPECTION INS-042 overdue — ZimDrug Distributors &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TX-8801: MedPharm → City Pharmacy, 500u Amoxicillin CLEARED &nbsp;|&nbsp; TX-8803: PharmaCorp → Sunrise FLAGGED risk 88/100 &nbsp;|&nbsp; ALERT: Batch #X9901 suspected counterfeit — Bulawayo &nbsp;|&nbsp; RECALL RC-001: 8/14 pharmacies confirmed</span>
+  <div class="ticker-wrap" id="tickerWrap">
+    <span class="ticker-inner" id="tickerInner">Connecting to live transaction feed...</span>
   </div>
+</div>
 </div>
 
 <!-- TOPBAR -->
@@ -365,8 +365,8 @@ input,select,textarea{font-family:inherit;}
     <div class="icon-btn" onclick="toggleDrawer()"><i class="fa-regular fa-bell"></i><span class="bdot"></span></div>
     <div class="icon-btn" onclick="alert('Exporting regulatory report...')"><i class="fa-solid fa-file-export"></i></div>
     <div class="topbar-profile">
-      <div class="foot-avatar">DR</div>
-      <div><div class="tp-name">Dr. R. Ncube</div><div class="tp-org">MCAZ · Senior Inspector</div></div>
+      <div class="foot-avatar" id="topbarAvatar">--</div>
+      <div><div class="tp-name" id="topbarUserName">Loading...</div><div class="tp-org" id="topbarUserRole">MCAZ</div></div>
     </div>
   </div>
 </header>
@@ -475,7 +475,7 @@ input,select,textarea{font-family:inherit;}
 
 <!-- VIEW: AI INTELLIGENCE -->
 <section class="view" id="view-ai">
-  <div class="panel"><div class="ph"><div><h3><i class="fa-solid fa-brain" style="color:var(--purple);margin-right:7px;"></i>AI Regulatory Intelligence</h3><div class="ph-sub">Proactive alerts — not waiting for questions. Auto-generated from transaction analysis.</div></div><div class="pact"><span class="badge bpurple">7 active alerts</span><button class="btn btn-outline btn-sm" onclick="renderAI()"><i class="fa-solid fa-rotate"></i>Refresh scan</button></div></div><div class="pb" id="aiAlertsBody"></div></div>
+  <div class="panel"><div class="ph"><div><h3><i class="fa-solid fa-brain" style="color:var(--purple);margin-right:7px;"></i>AI Regulatory Intelligence</h3><div class="ph-sub">Proactive alerts — not waiting for questions. Auto-generated from transaction analysis.</div></div><div class="pact"><span class="badge bpurple" id="aiAlertCountBadge">0 active alerts</span><button class="btn btn-outline btn-sm" onclick="renderAI()"><i class="fa-solid fa-rotate"></i>Refresh scan</button></div></div><div class="pb" id="aiAlertsBody"></div></div>
   <div class="panel"><div class="ph"><div><h3>Regulatory Query Assistant</h3><div class="ph-sub">Ask anything about NexaHealth platform data — responds from live regulatory context</div></div></div>
     <div style="height:420px;display:flex;flex-direction:column;">
       <div style="flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;" id="aiChat"></div>
@@ -656,16 +656,48 @@ input,select,textarea{font-family:inherit;}
    Replace DATA.* with: fetch('/api/mcaz/...').then(r=>r.json())
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── REAL API CLIENT ───────────────────────────────────────── */
+const API_BASE = window.location.origin + '/api';
+function getAuthToken(){ return localStorage.getItem('nexa_token'); }
+function getCurrentUser(){ try{ return JSON.parse(localStorage.getItem('nexa_user')||'{}'); }catch{ return {}; } }
+async function apiRequest(path, options = {}) {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) },
+  });
+  if (res.status === 401) { localStorage.removeItem('nexa_token'); localStorage.removeItem('nexa_user'); window.location.href = '/'; return null; }
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) { console.error(`API error [${path}]:`, data.message || res.statusText); throw new Error(data.message || 'Request failed.'); }
+  return data;
+}
+async function fetchAllOrders(){ const d = await apiRequest('/orders'); return d?.orders || []; }
+function initials(name){ if(!name) return '--'; return name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function handleLogout(){ localStorage.removeItem('nexa_token'); localStorage.removeItem('nexa_user'); window.location.href = '/'; }
+function mapRealOrderToTx(o){
+  return {
+    id: o.orderNumber,
+    time: new Date(o.createdAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+    date: new Date(o.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+    from: o.wholesaler?.businessName || o.wholesaler?.fullName || 'Wholesaler',
+    to: o.pharmacy?.businessName || o.pharmacy?.fullName || 'Pharmacy',
+    med: (o.items||[]).map(it=>it.name).join(', ') || '—',
+    batch: (o.items||[]).map(it=>it.batchNumber).join(', ') || '—',
+    qty: (o.items||[]).reduce((s,it)=>s+it.quantity,0),
+    val: '$' + Number(o.total||0).toFixed(2),
+    risk: o.riskScore || 0,
+    s: o.isFlagged ? 'warn' : 'ok',
+  };
+}
+
 /* ── DATA ───────────────────────────────────────────────────── */
+/* NOTE: tx[] below is replaced with REAL orders via refreshRegulatorData().
+   entities/recalls/complaints/inspections/aiAlerts/auditLog remain mock —
+   these need dedicated backend controllers (models already exist: Recall,
+   Complaint, Inspection, AuditLog) that haven't been built yet. Treat
+   everything below tx[] as a working demo of the UI, not live data. */
 const D={
-  tx:[
-    {id:'TX-8801',time:'10:14 AM',date:'Jul 10, 2026',from:'MedPharm Wholesale',to:'City Pharmacy',med:'Amoxicillin 500mg',batch:'#A2201',qty:500,val:'$140',risk:22,s:'ok'},
-    {id:'TX-8802',time:'10:08 AM',date:'Jul 10, 2026',from:'ZimDrug Distributors',to:'Greenwood Pharmacy',med:'Paracetamol 500mg',batch:'#P1102',qty:1000,val:'$450',risk:14,s:'ok'},
-    {id:'TX-8803',time:'9:55 AM',date:'Jul 10, 2026',from:'PharmaCorp Zimbabwe',to:'Sunrise Pharmacy',med:'Amoxicillin 500mg',batch:'#X9901',qty:300,val:'$93',risk:88,s:'warn'},
-    {id:'TX-8804',time:'9:40 AM',date:'Jul 10, 2026',from:'HealthLink Suppliers',to:'Wellcare Pharmacy',med:'ORS Sachets',batch:'#O0441',qty:200,val:'$60',risk:8,s:'ok'},
-    {id:'TX-8805',time:'9:22 AM',date:'Jul 10, 2026',from:'MedPharm Wholesale',to:'City Pharmacy',med:'Cetirizine 10mg',batch:'#C0220',qty:400,val:'$76',risk:16,s:'ok'},
-    {id:'TX-8806',time:'8:58 AM',date:'Jul 10, 2026',from:'Unknown Supplier',to:'Sunrise Pharmacy',med:'Amoxicillin 500mg',batch:'UNKNOWN',qty:150,val:'$46',risk:97,s:'warn'},
-  ],
+  tx:[], // real transactions loaded via refreshRegulatorData() from GET /api/orders
   entities:[
     {name:'MedPharm Wholesale',type:'wholesaler',lic:'MCAZ-1042',expiry:'Dec 2027',days:540,loc:'Workington, Harare',lat:-17.821,lng:31.049,tx:312,risk:8,rl:'low',s:'ok'},
     {name:'ZimDrug Distributors',type:'wholesaler',lic:'MCAZ-0891',expiry:'Aug 2026',days:14,loc:'Msasa, Harare',lat:-17.849,lng:31.080,tx:280,risk:42,rl:'medium',s:'warn'},
@@ -771,11 +803,11 @@ document.getElementById('menuToggle').addEventListener('click',()=>document.getE
 
 /* ── DASHBOARD ──────────────────────────────────────────────── */
 function renderDash(){
-  document.getElementById('d-tx').innerHTML=D.tx.slice(0,5).map(t=>`<tr>
+  document.getElementById('d-tx').innerHTML=D.tx.length ? D.tx.slice(0,5).map(t=>`<tr>
     <td><strong>${t.id}</strong></td><td>${t.time}</td><td>${t.from}</td><td>${t.to}</td>
     <td>${t.med}</td><td>${t.qty}</td><td>${rbadge(t.risk)}</td>
     <td><span class="badge ${t.s==='ok'?'bok':'bdanger'}">${t.s==='ok'?'Cleared':'Flagged'}</span></td>
-  </tr>`).join('');
+  </tr>`).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text-mut);padding:30px;">No transactions yet — real orders from pharmacies and wholesalers will appear here.</td></tr>`;
   document.getElementById('d-ai').innerHTML=D.aiAlerts.slice(0,3).map(a=>`
     <div class="ai-alert-item ${a.type==='warn'?'warn':a.type==='info'?'info':''}">
       <div class="ai-head"><div class="ai-title">${a.title}</div><span class="ai-conf">${a.conf}%</span></div>
@@ -799,6 +831,10 @@ setTimeout(renderDash,50);
 /* ── TRANSACTIONS ───────────────────────────────────────────── */
 function renderTx(f){
   const rows=f==='all'?D.tx:f==='high'?D.tx.filter(t=>t.risk>60):D.tx.filter(t=>t.s===f);
+  if(!rows.length){
+    document.getElementById('t-tx').innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-mut);padding:30px;">No transactions match this filter yet.</td></tr>`;
+    return;
+  }
   document.getElementById('t-tx').innerHTML=rows.map(t=>`<tr>
     <td><strong>${t.id}</strong></td><td>${t.date} ${t.time}</td><td>${t.from}</td><td>${t.to}</td>
     <td>${t.med}</td><td>${t.batch}</td><td>${t.qty}</td><td>${t.val}</td>
@@ -850,6 +886,9 @@ function clearTrace(){document.getElementById('traceInput').value='';document.ge
 
 /* ── RECALLS ────────────────────────────────────────────────── */
 function renderRecalls(){
+  const navRecallBadge = document.getElementById('navRecallBadge');
+  const activeRecalls = D.recalls.filter(r=>r.pending > 0).length;
+  if(navRecallBadge){ navRecallBadge.textContent = activeRecalls; navRecallBadge.style.display = activeRecalls ? 'inline-flex' : 'none'; }
   document.getElementById('recallBody').innerHTML=D.recalls.map(r=>{
     const cp=Math.round((r.confirmed/r.notified)*100);
     const rp=Math.round((r.recovered/r.target)*100);
@@ -990,6 +1029,10 @@ renderInsp('all');
 
 /* ── AI INTELLIGENCE ────────────────────────────────────────── */
 function renderAI(){
+  const badgeEl = document.getElementById('aiAlertCountBadge');
+  if(badgeEl) badgeEl.textContent = `${D.aiAlerts.length} active alert${D.aiAlerts.length===1?'':'s'}`;
+  const navBadge = document.getElementById('navAiBadge');
+  if(navBadge){ navBadge.textContent = D.aiAlerts.length; navBadge.style.display = D.aiAlerts.length ? 'inline-flex' : 'none'; }
   const tmap={critical:{cls:'',icon:'skull-crossbones',col:'var(--danger)'},warn:{cls:'warn',icon:'triangle-exclamation',col:'var(--warning)'},info:{cls:'info',icon:'circle-info',col:'var(--primary)'}};
   document.getElementById('aiAlertsBody').innerHTML=D.aiAlerts.map(a=>{
     const m=tmap[a.type]||tmap.info;
@@ -1024,11 +1067,9 @@ async function sendAI(){
   appendMsg('ai','<em>Analysing regulatory data...</em>');
   const node=document.getElementById('aiChat').lastElementChild;
   try{
-    if(window.puter&&puter.ai&&puter.ai.chat){
-      const r=await puter.ai.chat([{role:'system',content:AI_SYS},{role:'user',content:q}]);
-      node.innerHTML=(r?.message?.content||r?.toString?.()||'Unable to process.');
-    }else{node.innerHTML='AI backend not yet connected.';}
-  }catch(e){node.innerHTML='Unable to reach AI service. Please try again.';}
+    const res = await apiRequest('/ai/chat', {method:'POST', body: JSON.stringify({message:q, context:REG_CTX, systemPrompt:AI_SYS})});
+    node.innerHTML = res?.reply || 'Unable to process that request.';
+  }catch(e){node.innerHTML='The AI assistant isn\'t connected yet — this will work once the AI backend endpoint is live. No external popups or logins are used.';}
 }
 document.getElementById('aiInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendAI();});
 let vRec=null,vRec_on=false;
@@ -1137,7 +1178,7 @@ let _suspName='';
 function openSusp(name){_suspName=name;document.getElementById('suspName').textContent=name;openModal('suspendModal');}
 function confirmSuspend(){
   const e=D.entities.find(x=>x.name===_suspName);if(e)e.s='suspended';
-  D.auditLog.unshift({time:'Just now',action:`Entity ${_suspName} SUSPENDED`,user:'Dr. R. Ncube',role:'Senior Inspector',ip:'196.22.14.8',detail:document.getElementById('suspReason').value||'Regulatory violation'});
+  D.auditLog.unshift({time:'Just now',action:`Entity ${_suspName} SUSPENDED`,user:getCurrentUser().fullName||'MCAZ Officer',role:'Senior Inspector',ip:'—',detail:document.getElementById('suspReason').value||'Regulatory violation'});
   renderEntities('all');renderLic('all');closeModal('suspendModal');
   alert(`${_suspName} has been suspended and can no longer trade on NexaHealth.`);
 }
@@ -1147,7 +1188,7 @@ function reinstate(name){
 }
 function submitFlag(){
   const action=document.getElementById('flagAction').value;
-  D.auditLog.unshift({time:'Just now',action:`Regulatory action: ${action}`,user:'Dr. R. Ncube',role:'Senior Inspector',ip:'196.22.14.8',detail:document.getElementById('flagNotes').value||'No notes'});
+  D.auditLog.unshift({time:'Just now',action:`Regulatory action: ${action}`,user:getCurrentUser().fullName||'MCAZ Officer',role:'Senior Inspector',ip:'—',detail:document.getElementById('flagNotes').value||'No notes'});
   closeModal('flagModal');alert(`Regulatory action submitted. MCAZ team notified. Audit record created.`);
 }
 function registerEntity(){
@@ -1239,9 +1280,57 @@ function showMapInfo(e){
   document.getElementById('mapInfo').classList.add('show');
 }
 
-/* ── LIVE TX COUNTER ────────────────────────────────────────── */
-let txN=1284;
-setInterval(()=>{txN+=Math.floor(Math.random()*3+1);const el=document.getElementById('kpi-tx');if(el)el.textContent=txN.toLocaleString();},8000);
+/* ── AUTH GUARD + REAL DATA LOAD ────────────────────────────── */
+(function authGuard(){
+  if (!getAuthToken()) { window.location.href = '/'; return; }
+  const user = getCurrentUser();
+  const ini = initials(user.fullName);
+  const roleLabel = user.fullName ? `${user.fullName.startsWith('Dr') ? '' : ''}Inspector · MCAZ` : 'MCAZ';
+  const sbAvatar = document.getElementById('sidebarAvatar');
+  const sbName = document.getElementById('sidebarUserName');
+  const sbRole = document.getElementById('sidebarUserRole');
+  if(sbAvatar) sbAvatar.textContent = ini;
+  if(sbName) sbName.textContent = user.fullName || 'MCAZ Officer';
+  if(sbRole) sbRole.textContent = roleLabel;
+  const tbAvatar = document.getElementById('topbarAvatar');
+  const tbName = document.getElementById('topbarUserName');
+  const tbRole = document.getElementById('topbarUserRole');
+  if(tbAvatar) tbAvatar.textContent = ini;
+  if(tbName) tbName.textContent = user.fullName || 'MCAZ Officer';
+  if(tbRole) tbRole.textContent = roleLabel;
+})();
+
+async function refreshRegulatorData(){
+  try {
+    const realOrders = await fetchAllOrders().catch(()=>[]);
+    if (realOrders.length) {
+      D.tx.length = 0;
+      realOrders.forEach(o => D.tx.push(mapRealOrderToTx(o)));
+    }
+
+    // Update KPI: real transaction count (no more fake random increments)
+    const kpiEl = document.getElementById('kpi-tx');
+    if(kpiEl) kpiEl.textContent = D.tx.length.toLocaleString();
+
+    // Update live ticker with real transaction summaries, or an honest idle message
+    const tickerEl = document.getElementById('tickerInner');
+    if(tickerEl){
+      if(D.tx.length){
+        const items = D.tx.slice(0,8).map(t=>`${t.id}: ${t.from} → ${t.to}, ${t.med} — ${t.s==='ok'?'CLEARED':'FLAGGED'}`);
+        tickerEl.textContent = items.concat(items).join('   |   ');
+      } else {
+        tickerEl.textContent = 'No live transactions yet — this feed updates automatically as orders are placed on NexaHealth.';
+      }
+    }
+
+    // Re-render whichever view is currently visible
+    if(typeof renderDash === 'function') renderDash();
+    if(document.getElementById('view-transactions')?.classList.contains('active') && typeof renderTx === 'function') renderTx('all');
+  } catch (err) {
+    console.error('Failed to load real regulatory data:', err.message);
+  }
+}
+refreshRegulatorData();
 </script>
 </body>
 </html>
