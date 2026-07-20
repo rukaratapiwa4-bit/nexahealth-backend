@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexaHealth — Driver Dashboard</title>
+
+<!-- Fonts & Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- Mapbox GL JS -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+
+<style>
+/* ============ DESIGN TOKENS (matches pharmacist/wholesaler/mcaz) ============ */
+:root{
+  --primary:#0088cc;
+  --primary-dark:#0b2b44;
+  --primary-light:#e6f4fb;
+  --primary-soft:#d6ecf9;
+  --success:#16a34a;
+  --success-bg:#e8f8ee;
+  --warning:#f59e0b;
+  --warning-bg:#fef6e7;
+  --danger:#dc2626;
+  --danger-bg:#fdecec;
+  --purple:#7c3aed;
+  --purple-bg:#f3f0ff;
+  --bg:#f4f7fa;
+  --surface:#fff;
+  --border:#e3e9ef;
+  --text:#152238;
+  --text-mut:#64748b;
+  --text-faint:#94a3b8;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(11,43,68,.04),0 4px 16px rgba(11,43,68,.06);
+  --shadow-lg:0 8px 30px rgba(11,43,68,.12);
+  --sidebar-w:252px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14.5px;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button, a, .nav-item, [onclick], .btn, .link-action, .icon-btn, .status-btn, select{cursor:pointer;}
+input[type="text"], input[type="tel"], textarea{cursor:text;}
+::-webkit-scrollbar{width:8px;} ::-webkit-scrollbar-thumb{background:#cbd8e2;border-radius:8px;}
+
+/* ============ APP SHELL (fixed viewport, no page-level scroll) ============ */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+.sidebar{
+  width:var(--sidebar-w);background:var(--primary-dark);color:#cfe3f0;
+  position:fixed;top:0;left:0;bottom:0;z-index:100;
+  display:flex;flex-direction:column;transition:transform .25s ease;
+}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:22px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#00b8f0);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:15px;flex-shrink:0;}
+.sidebar-brand .name{font-weight:700;color:#fff;font-size:16.5px;line-height:1.1;}
+.sidebar-brand .role{font-size:11px;color:#7fa8c2;text-transform:uppercase;letter-spacing:.05em;}
+
+.sidebar-nav{flex:1;overflow-y:auto;padding:16px 12px;}
+.nav-group-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#5f88a3;padding:14px 12px 6px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;margin-bottom:2px;color:#c3dbe9;font-weight:500;font-size:14px;transition:background .15s,color .15s;}
+.nav-item i{width:18px;text-align:center;font-size:15px;color:#7fa8c2;flex-shrink:0;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+.nav-item.active{background:var(--primary);color:#fff;}
+.nav-item.active i{color:#fff;}
+.nav-item .nbadge{margin-left:auto;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:20px;background:var(--danger);color:#fff;min-width:18px;text-align:center;}
+
+.sidebar-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.foot-avatar{width:34px;height:34px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0;}
+.foot-name{font-size:13px;color:#fff;font-weight:600;line-height:1.2;}
+.foot-sub{font-size:11.5px;color:#7fa8c2;}
+.foot-logout{margin-left:auto;color:#7fa8c2;cursor:pointer;font-size:15px;}
+.foot-logout:hover{color:#fff;}
+
+/* Online/offline toggle in sidebar */
+.status-toggle-wrap{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.status-toggle{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 14px;}
+.status-toggle .label{font-size:12.5px;font-weight:600;color:#e0eef7;display:flex;align-items:center;gap:8px;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint);}
+.status-dot.online{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.25);}
+.toggle-switch{position:relative;width:42px;height:22px;background:rgba(255,255,255,.15);border-radius:20px;transition:background .2s;flex-shrink:0;}
+.toggle-switch.on{background:#22c55e;}
+.toggle-switch .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;}
+.toggle-switch.on .knob{transform:translateX(20px);}
+
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden;}
+
+.topbar{height:68px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 26px;position:sticky;top:0;z-index:50;flex-shrink:0;}
+.menu-toggle{display:none;font-size:18px;color:var(--text-mut);}
+.page-title{font-size:18px;font-weight:700;color:var(--primary-dark);}
+.page-sub{font-size:12.5px;color:var(--text-mut);margin-top:1px;}
+.topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.icon-btn{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text-mut);font-size:16px;position:relative;transition:background .15s;}
+.icon-btn:hover{background:var(--bg);}
+.icon-btn .dot{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--danger);border:2px solid var(--surface);}
+.topbar-dropdown{display:none;position:absolute;top:calc(100% + 10px);right:0;width:320px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);z-index:200;overflow:hidden;}
+.topbar-dropdown.show{display:block;}
+.topbar-dropdown .td-head{padding:14px 18px;font-weight:700;font-size:13.5px;border-bottom:1px solid var(--border);color:var(--primary-dark);}
+.topbar-dropdown .td-body{max-height:320px;overflow-y:auto;}
+.topbar-dropdown .td-empty{padding:30px 18px;text-align:center;color:var(--text-mut);font-size:13px;}
+.topbar-dropdown .td-item{padding:12px 18px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;}
+.topbar-dropdown .td-item:hover{background:var(--bg);}
+.topbar-dropdown .td-item:last-child{border-bottom:none;}
+.topbar-dropdown .td-item .td-title{font-weight:600;color:var(--text);}
+.topbar-dropdown .td-item .td-sub{color:var(--text-mut);font-size:12px;margin-top:2px;}
+.topbar-profile{display:flex;align-items:center;gap:10px;padding-left:12px;border-left:1px solid var(--border);}
+.topbar-profile .name{font-size:13.5px;font-weight:600;}
+.topbar-profile .sub{font-size:11.5px;color:var(--text-mut);}
+
+.content{padding:26px;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;width:100%;box-sizing:border-box;}
+.view{display:none;}
+.view.active{display:block;animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+
+/* ============ GRID / STATS ============ */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+.stat-card .icon-wrap{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:12px;}
+.icon-wrap.blue{background:var(--primary-light);color:var(--primary);}
+.icon-wrap.green{background:var(--success-bg);color:var(--success);}
+.icon-wrap.amber{background:var(--warning-bg);color:var(--warning);}
+.icon-wrap.purple{background:var(--purple-bg);color:var(--purple);}
+.stat-card .value{font-size:24px;font-weight:800;color:var(--primary-dark);}
+.stat-card .label{font-size:12.5px;color:var(--text-mut);margin-top:2px;}
+.stat-card .trend{font-size:11.5px;font-weight:600;margin-top:8px;}
+.trend.up{color:var(--success);} .trend.flat{color:var(--text-faint);}
+
+.two-col{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;}
+
+/* ============ PANEL ============ */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px;width:100%;box-sizing:border-box;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+.panel-head h3{font-size:15px;font-weight:700;color:var(--primary-dark);}
+.panel-head .sub{font-size:12px;color:var(--text-mut);margin-top:2px;font-weight:400;}
+.panel-body{padding:22px;}
+
+/* ============ DELIVERY CARD (list of assigned orders) ============ */
+.delivery-card{border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px;transition:border-color .15s,box-shadow .15s;}
+.delivery-card:hover{border-color:var(--primary);box-shadow:var(--shadow);}
+.delivery-card.active-job{border-color:var(--primary);background:var(--primary-light);}
+.dc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.dc-order-id{font-size:13.5px;font-weight:700;color:var(--primary-dark);}
+.dc-route{font-size:13px;color:var(--text-mut);margin-top:3px;}
+.dc-route i{color:var(--primary);margin-right:4px;}
+.dc-meta{display:flex;gap:16px;font-size:12.5px;color:var(--text-mut);margin-top:8px;flex-wrap:wrap;}
+.dc-meta span{display:flex;align-items:center;gap:5px;}
+.dc-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+
+/* ============ STATUS BADGE ============ */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;}
+.badge.pending{background:var(--warning-bg);color:#b45309;}
+.badge.dispatched{background:var(--primary-light);color:var(--primary);}
+.badge.delivered{background:var(--success-bg);color:var(--success);}
+.badge.cancelled{background:var(--danger-bg);color:var(--danger);}
+
+/* ============ BUTTONS ============ */
+.btn{padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:background .15s;}
+.btn-primary{background:var(--primary);color:#fff;} .btn-primary:hover{background:#0077b3;}
+.btn-success{background:var(--success);color:#fff;} .btn-success:hover{background:#128a3e;}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--text);} .btn-outline:hover{border-color:var(--primary);color:var(--primary);}
+.btn-danger{background:var(--danger);color:#fff;} .btn-danger:hover{background:#b91c1c;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-block{width:100%;justify-content:center;}
+.btn-icon{width:38px;height:38px;padding:0;justify-content:center;border-radius:9px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ============ MAP ============ */
+.map-wrap{position:relative;height:420px;}
+#driverMap{width:100%;height:100%;border-radius:0 0 var(--radius) var(--radius);}
+.map-overlay-card{
+  position:absolute;bottom:16px;left:16px;right:16px;background:#fff;
+  border-radius:12px;box-shadow:var(--shadow-lg);padding:16px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+
+/* ============ EMPTY STATE ============ */
+.empty-state{text-align:center;color:var(--text-mut);padding:40px 20px;}
+.empty-state .emoji{font-size:26px;margin-bottom:10px;}
+
+/* ============ EARNINGS TABLE ============ */
+.dt{width:100%;border-collapse:collapse;}
+.dt th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-mut);padding:0 22px 12px;font-weight:600;}
+.dt td{padding:14px 22px;border-top:1px solid var(--border);font-size:13.5px;}
+
+/* ============ MODAL ============ */
+.modal{position:fixed;inset:0;background:rgba(11,43,68,.45);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal.show{display:flex;}
+.mbox{background:#fff;border-radius:var(--radius);width:100%;max-width:440px;box-shadow:var(--shadow-lg);}
+.mhead{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.mhead h3{font-size:15px;font-weight:700;}
+.mclose{cursor:pointer;color:var(--text-mut);font-size:16px;}
+.mbody{padding:22px;}
+.mfoot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;}
+.fc{width:100%;border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:13.5px;font-family:inherit;outline:none;}
+.fc:focus{border-color:var(--primary);}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.mo{transform:translateX(0);}
+  .main{margin-left:0;}
+  .menu-toggle{display:block;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .two-col{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-mark">N</div>
+    <div><div class="name">NexaHealth</div><div class="role">Driver Portal</div></div>
+  </div>
+
+  <!-- Online/Offline toggle -->
+  <div class="status-toggle-wrap">
+    <div class="status-toggle" onclick="toggleOnlineStatus()">
+      <div class="label"><span class="status-dot" id="statusDot"></span><span id="statusLabel">Offline</span></div>
+      <div class="toggle-switch" id="statusSwitch"><div class="knob"></div></div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Deliveries</div>
+    <a class="nav-item active" data-view="dashboard"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+    <a class="nav-item" data-view="active"><i class="fa-solid fa-route"></i> Active Delivery</a>
+    <a class="nav-item" data-view="assigned"><i class="fa-solid fa-list-check"></i> Assigned Orders <span class="nbadge" id="navAssignedBadge" style="display:none;">0</span></a>
+    <a class="nav-item" data-view="history"><i class="fa-solid fa-clock-rotate-left"></i> Delivery History</a>
+
+    <div class="nav-group-label">Account</div>
+    <a class="nav-item" data-view="earnings"><i class="fa-solid fa-sack-dollar"></i> Earnings</a>
+    <a class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i> Settings</a>
+  </nav>
+
+  <div class="sidebar-foot">
+    <div class="foot-avatar" id="sidebarAvatar">--</div>
+    <div><div class="foot-name" id="sidebarUserName">Loading...</div><div class="foot-sub" id="sidebarUserSub">Driver</div></div>
+    <i class="fa-solid fa-right-from-bracket foot-logout" onclick="handleLogout()"></i>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <i class="fa-solid fa-bars menu-toggle" id="menuToggle"></i>
+    <div><div class="page-title" id="pageTitle">Dashboard</div><div class="page-sub" id="pageSub">Your deliveries at a glance</div></div>
+    <div class="topbar-actions">
+      <div class="icon-btn-wrap" style="position:relative;">
+        <div class="icon-btn" onclick="toggleDropdown('notifDropdown')"><i class="fa-regular fa-bell"></i><span class="dot" id="notifDot" style="display:none;"></span></div>
+        <div class="topbar-dropdown" id="notifDropdown">
+          <div class="td-head">Notifications</div>
+          <div class="td-body" id="notifDropdownBody"><div class="td-empty">👉 No notifications yet</div></div>
+        </div>
+      </div>
+      <div class="topbar-profile">
+        <div class="foot-avatar" id="topbarAvatar">--</div>
+        <div><div class="name" id="topbarUserName">Loading...</div><div class="sub" id="topbarUserSub">Driver</div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ══════════════ VIEW: DASHBOARD ══════════════ -->
+    <section class="view active" id="view-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="icon-wrap blue"><i class="fa-solid fa-box"></i></div><div class="value" id="statAssigned">0</div><div class="label">Assigned deliveries</div><div class="trend flat" id="statAssignedTrend">No data yet</div></div>
+        <div class="stat-card"><div class="icon-wrap green"><i class="fa-solid fa-check-double"></i></div><div class="value" id="statCompleted">0</div><div class="label">Completed today</div><div class="trend flat" id="statCompletedTrend">No data yet</div></div>
+        <div class="stat-card"><div class="icon-wrap amber"><i class="fa-solid fa-route"></i></div><div class="value" id="statDistance">0 km</div><div class="label">Distance today</div><div class="trend flat" id="statDistanceTrend">Not tracked yet</div></div>
+        <div class="stat-card"><div class="icon-wrap purple"><i class="fa-solid fa-sack-dollar"></i></div><div class="value" id="statEarnings">$0</div><div class="label">Earnings today</div><div class="trend flat" id="statEarningsTrend">Not tracked yet</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Your deliveries</h3><div class="sub">Orders assigned to you right now</div></div><button class="btn btn-outline btn-sm" onclick="goTo('assigned')">View all</button></div>
+          <div class="panel-body" id="dashDeliveriesBody"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Quick status</h3></div>
+          <div class="panel-body" id="quickStatusBody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ VIEW: ACTIVE DELIVERY (live map + status controls) ══════════════ -->
+    <section class="view" id="view-active">
+      <div class="panel" id="activeDeliveryPanel">
+        <div class="panel-head"><div><h3 id="activeOrderTitle">No active delivery</h3><div class="sub" id="activeOrderSub">Select an order from Assigned Orders to begin</div></div></div>
+        <div class="map-wrap">
+          <div id="driverMap"></div>
+          <div class="map-overlay-card" id="mapOverlayCard" style="display:none;">
+            <div>
+              <div style="font-size:13px;font-weight:700;" id="overlayDestName">—</div>
+              <div style="font-size:12px;color:var(--text-mut);" id="overlayDestAddr">—</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline btn-sm" onclick="callCustomer()"><i class="fa-solid fa-phone"></i> Call</button>
+              <button class="btn btn-outline btn-sm" onclick="openInGoogleMaps()"><i class="fa-solid fa-diamond-turn-right"></i> Navigate</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel-body" id="activeDeliveryControls"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ VIEW: ASSIGNED ORDERS ══════════════ -->
+    <section class="view" id="view-assigned">
+      <div class="panel">
+        <div class="panel-head"><div><h3>Assigned orders</h3><div class="sub">Everything dispatched to you, oldest first</div></div></div>
+        <div class="panel-body" id="assignedOrdersBody"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════ VIEW: DELIVERY HISTORY ══════════════ -->
+    <section class="view" id="view-history">
+      <div class="panel">
+        <div class="panel-head"><div><h3>Delivery history</h3><div class="sub">Every delivery you've completed</div></div></div>
+        <div style="overflow-x:auto;">
+          <table class="dt">
+            <thead><tr><th>Order</th><th>Route</th><th>Delivered</th><th>Status</th></tr></thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ VIEW: EARNINGS ══════════════ -->
+    <section class="view" id="view-earnings">
+      <div class="panel">
+        <div class="panel-head"><div><h3>Earnings</h3><div class="sub">Per-delivery fee tracking</div></div></div>
+        <div class="panel-body">
+          <div class="empty-state">
+            <div class="emoji">👉</div>
+            Per-delivery earnings aren't tracked by the platform yet — this needs a delivery fee field added to the backend. Once wired, real payouts will show here.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ VIEW: SETTINGS ══════════════ -->
+    <section class="view" id="view-settings">
+      <div class="panel">
+        <div class="panel-head"><h3>Driver profile</h3></div>
+        <div class="panel-body">
+          <div class="fg"><label>Full name</label><input class="fc" id="settingsName" disabled></div>
+          <div class="fg"><label>Phone</label><input class="fc" id="settingsPhone" disabled></div>
+          <div class="fg"><label>Vehicle details</label><input class="fc" id="settingsVehicle" placeholder="e.g. Delivery van — ABC 1234"></div>
+          <button class="btn btn-primary" onclick="saveVehicleDetails()"><i class="fa-solid fa-check"></i> Save vehicle details</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+</div>
+
+<!-- STATUS UPDATE CONFIRM MODAL -->
+<div class="modal" id="statusModal">
+  <div class="mbox">
+    <div class="mhead"><h3 id="statusModalTitle">Update status</h3><span class="mclose" onclick="closeModal('statusModal')"><i class="fa-solid fa-xmark"></i></span></div>
+    <div class="mbody">
+      <p style="font-size:13.5px;color:var(--text-mut);" id="statusModalBody">Are you sure?</p>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-outline" onclick="closeModal('statusModal')">Cancel</button>
+      <button class="btn btn-primary" id="statusModalConfirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+<script>
+/* =========================================================================
+   NEXAHEALTH DRIVER DASHBOARD — REAL API CLIENT
+   Built real from the start — no mock data to remove later.
+   Reads/updates orders where driver = current logged-in user.
+   ========================================================================= */
+const API_BASE = window.location.origin + '/api';
+function getAuthToken(){ return localStorage.getItem('nexa_token'); }
+function getCurrentUser(){ try{ return JSON.parse(localStorage.getItem('nexa_user')||'{}'); }catch{ return {}; } }
+function initials(name){ if(!name) return '--'; return name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function handleLogout(){ localStorage.removeItem('nexa_token'); localStorage.removeItem('nexa_user'); window.location.href = '/'; }
+
+async function apiRequest(path, options = {}) {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) },
+  });
+  if (res.status === 401) { localStorage.removeItem('nexa_token'); localStorage.removeItem('nexa_user'); window.location.href = '/'; return null; }
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) { console.error(`API error [${path}]:`, data.message || res.statusText); throw new Error(data.message || 'Request failed.'); }
+  return data;
+}
+
+/* GET /api/orders returns orders scoped by role on the backend. For a
+   'logistics' user there is no dedicated filter yet (see note in
+   orderController.js), so we filter client-side to orders assigned to
+   this driver. Once a driver-specific backend filter exists, remove the
+   client-side filter and rely on the server instead. */
+async function fetchMyDeliveries(){
+  const d = await apiRequest('/orders');
+  const all = d?.orders || [];
+  const me = getCurrentUser();
+  return all.filter(o => o.driver && (o.driver._id === me.id || o.driver === me.id));
+}
+
+async function updateDeliveryStatus(orderId, status){
+  return apiRequest(`/orders/${orderId}/status`, { method:'PATCH', body: JSON.stringify({ status }) });
+}
+
+/* Map a real backend Order to the shape this dashboard's UI expects */
+function mapOrder(o){
+  return {
+    _id: o._id,
+    orderNumber: o.orderNumber,
+    pharmacyName: o.pharmacy?.businessName || o.pharmacy?.fullName || 'Pharmacy',
+    pharmacyPhone: o.pharmacy?.phone || null,
+    wholesalerName: o.wholesaler?.businessName || o.wholesaler?.fullName || 'Wholesaler',
+    deliveryAddress: o.deliveryAddress || 'Address not provided',
+    items: (o.items||[]).map(it=>`${it.name} ×${it.quantity}`).join(', ') || '—',
+    total: '$' + Number(o.total||0).toFixed(2),
+    status: o.status,
+    createdAt: o.createdAt,
+  };
+}
+
+let MY_DELIVERIES = [];
+let ACTIVE_ORDER_ID = null;
+let driverMapInstance = null;
+let isOnline = false;
+
+/* ── AUTH GUARD + REAL USER INFO ─────────────────────────────────────── */
+(function authGuard(){
+  if (!getAuthToken()) { window.location.href = '/'; return; }
+  const user = getCurrentUser();
+  const ini = initials(user.fullName);
+  const sbAvatar = document.getElementById('sidebarAvatar');
+  const sbName = document.getElementById('sidebarUserName');
+  const sbSub = document.getElementById('sidebarUserSub');
+  if(sbAvatar) sbAvatar.textContent = ini;
+  if(sbName) sbName.textContent = user.fullName || 'Driver';
+  if(sbSub) sbSub.textContent = user.businessName || 'Delivery Driver';
+  const tbAvatar = document.getElementById('topbarAvatar');
+  const tbName = document.getElementById('topbarUserName');
+  const tbSub = document.getElementById('topbarUserSub');
+  if(tbAvatar) tbAvatar.textContent = ini;
+  if(tbName) tbName.textContent = user.fullName || 'Driver';
+  if(tbSub) tbSub.textContent = 'Driver';
+
+  document.getElementById('settingsName').value = user.fullName || '';
+  document.getElementById('settingsPhone').value = user.phone || '';
+})();
+
+/* ── ONLINE/OFFLINE TOGGLE ───────────────────────────────────────────── */
+function toggleOnlineStatus(){
+  isOnline = !isOnline;
+  document.getElementById('statusDot').classList.toggle('online', isOnline);
+  document.getElementById('statusLabel').textContent = isOnline ? 'Online' : 'Offline';
+  document.getElementById('statusSwitch').classList.toggle('on', isOnline);
+  // NOTE: this is a UI-only toggle for now. To make "online" mean something
+  // real (e.g. eligible for auto-assignment), the backend needs an
+  // isAvailable field on the driver's User record — not built yet.
+}
+
+/* ── NOTIFICATION DROPDOWN ───────────────────────────────────────────── */
+function toggleDropdown(id){
+  const el = document.getElementById(id);
+  const isOpen = el.classList.contains('show');
+  document.querySelectorAll('.topbar-dropdown').forEach(d=>d.classList.remove('show'));
+  if(!isOpen) el.classList.add('show');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.icon-btn-wrap')){
+    document.querySelectorAll('.topbar-dropdown').forEach(d=>d.classList.remove('show'));
+  }
+});
+function populateDropdown(){
+  const pending = MY_DELIVERIES.filter(o=>o.status==='dispatched').length;
+  const notifBody = document.getElementById('notifDropdownBody');
+  const notifDot = document.getElementById('notifDot');
+  if(pending){
+    notifBody.innerHTML = `<div class="td-item" onclick="goTo('assigned'); toggleDropdown('notifDropdown');"><div class="td-title">${pending} delivery${pending===1?'':'ies'} in progress</div><div class="td-sub">Tap to view assigned orders</div></div>`;
+    notifDot.style.display = 'block';
+  } else {
+    notifBody.innerHTML = `<div class="td-empty">👉 No notifications yet</div>`;
+    notifDot.style.display = 'none';
+  }
+}
+
+/* ── NAVIGATION ───────────────────────────────────────────────────────── */
+const TITLES = {
+  dashboard:['Dashboard','Your deliveries at a glance'],
+  active:['Active Delivery','Live tracking for your current job'],
+  assigned:['Assigned Orders','Everything dispatched to you'],
+  history:['Delivery History','Every delivery you have completed'],
+  earnings:['Earnings','Per-delivery fee tracking'],
+  settings:['Settings','Your driver profile'],
+};
+function goTo(view){
+  document.querySelectorAll('.nav-item[data-view]').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+  const [t,s] = TITLES[view] || [view,''];
+  document.getElementById('pageTitle').textContent = t;
+  document.getElementById('pageSub').textContent = s;
+  document.getElementById('sidebar').classList.remove('mo');
+  if(view==='active') setTimeout(initDriverMap, 60);
+}
+document.querySelectorAll('.nav-item[data-view]').forEach(n=>n.addEventListener('click',()=>goTo(n.dataset.view)));
+document.getElementById('menuToggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('mo'));
+
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+</script>
+<script>
+/* ── STATUS BADGE HELPER ─────────────────────────────────────────────── */
+function statusBadge(s){
+  const map = {
+    pending: ['pending','Pending'],
+    confirmed: ['pending','Confirming'],
+    preparing: ['pending','Preparing'],
+    dispatched: ['dispatched','In transit'],
+    delivered: ['delivered','Delivered'],
+    cancelled: ['cancelled','Cancelled'],
+    rejected: ['cancelled','Rejected'],
+  };
+  const [cls,label] = map[s] || ['pending', s];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+/* ── DASHBOARD ────────────────────────────────────────────────────────── */
+function renderDashboard(){
+  const assigned = MY_DELIVERIES.filter(o=>o.status==='dispatched');
+  const deliveredToday = MY_DELIVERIES.filter(o=>{
+    if(o.status!=='delivered') return false;
+    const d = new Date(o.createdAt);
+    const today = new Date();
+    return d.toDateString() === today.toDateString();
+  });
+
+  document.getElementById('statAssigned').textContent = assigned.length;
+  document.getElementById('statCompleted').textContent = deliveredToday.length;
+  document.getElementById('statAssignedTrend').textContent = assigned.length ? 'Ready to deliver' : 'No active jobs';
+  document.getElementById('statCompletedTrend').textContent = deliveredToday.length ? 'Nice work' : 'None yet today';
+
+  const navBadge = document.getElementById('navAssignedBadge');
+  if(navBadge){ navBadge.textContent = assigned.length; navBadge.style.display = assigned.length ? 'inline-flex' : 'none'; }
+
+  const body = document.getElementById('dashDeliveriesBody');
+  if(!assigned.length){
+    body.innerHTML = `<div class="empty-state"><div class="emoji">👉</div>No deliveries assigned yet. A wholesaler will assign you once an order is ready for dispatch.</div>`;
+  } else {
+    body.innerHTML = assigned.slice(0,4).map(o=>deliveryCard(o)).join('');
+  }
+
+  const quickBody = document.getElementById('quickStatusBody');
+  if(!assigned.length){
+    quickBody.innerHTML = `<div class="empty-state"><div class="emoji">👉</div>Nothing to update right now.</div>`;
+  } else {
+    quickBody.innerHTML = assigned.map(o=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div><div style="font-size:13px;font-weight:600;">${o.orderNumber}</div><div style="font-size:11.5px;color:var(--text-mut);">${o.pharmacyName}</div></div>
+        <button class="btn btn-success btn-sm" onclick="promptMarkDelivered('${o._id}')"><i class="fa-solid fa-check"></i> Delivered</button>
+      </div>`).join('');
+  }
+}
+
+/* ── DELIVERY CARD (reused in dashboard + assigned views) ────────────── */
+function deliveryCard(o){
+  return `
+    <div class="delivery-card ${o._id===ACTIVE_ORDER_ID?'active-job':''}">
+      <div class="dc-top">
+        <div>
+          <div class="dc-order-id">${o.orderNumber}</div>
+          <div class="dc-route"><i class="fa-solid fa-location-dot"></i>${o.pharmacyName} — ${o.deliveryAddress}</div>
+        </div>
+        ${statusBadge(o.status)}
+      </div>
+      <div class="dc-meta">
+        <span><i class="fa-solid fa-industry"></i>${o.wholesalerName}</span>
+        <span><i class="fa-solid fa-boxes-stacked"></i>${o.items}</span>
+        <span><i class="fa-solid fa-sack-dollar"></i>${o.total}</span>
+      </div>
+      <div class="dc-actions">
+        <button class="btn btn-primary btn-sm" onclick="startNavigation('${o._id}')"><i class="fa-solid fa-route"></i> Navigate</button>
+        <button class="btn btn-outline btn-sm" onclick="callPharmacy('${o._id}')"><i class="fa-solid fa-phone"></i> Call pharmacy</button>
+        ${o.status==='dispatched' ? `<button class="btn btn-success btn-sm" onclick="promptMarkDelivered('${o._id}')"><i class="fa-solid fa-check-double"></i> Mark delivered</button>` : ''}
+      </div>
+    </div>`;
+}
+
+/* ── ASSIGNED ORDERS VIEW ─────────────────────────────────────────────── */
+function renderAssigned(){
+  const active = MY_DELIVERIES.filter(o=>['dispatched'].includes(o.status));
+  const body = document.getElementById('assignedOrdersBody');
+  if(!active.length){
+    body.innerHTML = `<div class="empty-state"><div class="emoji">👉</div>No orders assigned to you right now.</div>`;
+    return;
+  }
+  body.innerHTML = active.map(o=>deliveryCard(o)).join('');
+}
+
+/* ── DELIVERY HISTORY VIEW ────────────────────────────────────────────── */
+function renderHistory(){
+  const done = MY_DELIVERIES.filter(o=>['delivered','cancelled','rejected'].includes(o.status));
+  const body = document.getElementById('historyBody');
+  if(!done.length){
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-mut);padding:30px;">No completed deliveries yet.</td></tr>`;
+    return;
+  }
+  body.innerHTML = done.map(o=>`
+    <tr>
+      <td><strong>${o.orderNumber}</strong></td>
+      <td>${o.pharmacyName}</td>
+      <td>${new Date(o.createdAt).toLocaleDateString()}</td>
+      <td>${statusBadge(o.status)}</td>
+    </tr>`).join('');
+}
+
+/* ── ACTIVE DELIVERY VIEW ─────────────────────────────────────────────── */
+function renderActiveDelivery(){
+  const order = MY_DELIVERIES.find(o=>o._id===ACTIVE_ORDER_ID);
+  const controls = document.getElementById('activeDeliveryControls');
+  const overlay = document.getElementById('mapOverlayCard');
+
+  if(!order){
+    document.getElementById('activeOrderTitle').textContent = 'No active delivery';
+    document.getElementById('activeOrderSub').textContent = 'Select an order from Assigned Orders to begin';
+    overlay.style.display = 'none';
+    controls.innerHTML = `<div class="empty-state"><div class="emoji">👉</div>Go to "Assigned Orders" and tap "Navigate" on a delivery to start tracking it here.</div>`;
+    return;
+  }
+
+  document.getElementById('activeOrderTitle').textContent = `${order.orderNumber} — ${order.pharmacyName}`;
+  document.getElementById('activeOrderSub').textContent = order.deliveryAddress;
+  overlay.style.display = 'flex';
+  document.getElementById('overlayDestName').textContent = order.pharmacyName;
+  document.getElementById('overlayDestAddr').textContent = order.deliveryAddress;
+
+  controls.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:13px;color:var(--text-mut);">Delivering</div>
+        <div style="font-size:14px;font-weight:600;">${order.items}</div>
+      </div>
+      ${statusBadge(order.status)}
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+      <button class="btn btn-outline" onclick="callPharmacy('${order._id}')"><i class="fa-solid fa-phone"></i> Call pharmacy</button>
+      <button class="btn btn-outline" onclick="openInGoogleMaps()"><i class="fa-solid fa-diamond-turn-right"></i> Open in Google Maps</button>
+      ${order.status==='dispatched' ? `<button class="btn btn-success" onclick="promptMarkDelivered('${order._id}')"><i class="fa-solid fa-check-double"></i> Mark as delivered</button>` : ''}
+    </div>`;
+}
+
+function startNavigation(orderId){
+  ACTIVE_ORDER_ID = orderId;
+  goTo('active');
+  renderActiveDelivery();
+}
+
+/* ── MAP (MapLibre-free, using Mapbox already loaded by this dashboard) ── */
+function initDriverMap(){
+  if(driverMapInstance) { driverMapInstance.resize(); return; }
+  try{
+    mapboxgl.accessToken = 'YOUR_MAPBOX_PUBLIC_TOKEN'; // same placeholder pattern as pharmacist/wholesaler dashboards
+    driverMapInstance = new mapboxgl.Map({
+      container: 'driverMap',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [31.05, -17.83], // Harare default
+      zoom: 12,
+    });
+    driverMapInstance.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  }catch(err){
+    console.warn('Map failed to load — likely missing a real Mapbox token.', err);
+    document.getElementById('driverMap').innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-mut);font-size:13px;">Map unavailable — Mapbox token not configured yet.</div>`;
+  }
+}
+
+/* ── CALL / NAVIGATE ACTIONS ─────────────────────────────────────────── */
+function callPharmacy(orderId){
+  const o = MY_DELIVERIES.find(x=>x._id===orderId);
+  if(!o){ return; }
+  if(o.pharmacyPhone){
+    window.location.href = `tel:${o.pharmacyPhone}`;
+  } else {
+    alert(`No phone number on file for ${o.pharmacyName}.`);
+  }
+}
+function callCustomer(){ callPharmacy(ACTIVE_ORDER_ID); }
+function openInGoogleMaps(){
+  const order = MY_DELIVERIES.find(o=>o._id===ACTIVE_ORDER_ID);
+  if(!order) return;
+  const query = encodeURIComponent(order.deliveryAddress);
+  window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+}
+
+/* ── MARK AS DELIVERED (real backend call) ───────────────────────────── */
+function promptMarkDelivered(orderId){
+  const o = MY_DELIVERIES.find(x=>x._id===orderId);
+  if(!o) return;
+  document.getElementById('statusModalTitle').textContent = 'Confirm delivery';
+  document.getElementById('statusModalBody').textContent = `Mark ${o.orderNumber} (${o.pharmacyName}) as delivered? This cannot be undone.`;
+  const btn = document.getElementById('statusModalConfirmBtn');
+  btn.onclick = () => confirmMarkDelivered(orderId);
+  openModal('statusModal');
+}
+async function confirmMarkDelivered(orderId){
+  const btn = document.getElementById('statusModalConfirmBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+  try{
+    await updateDeliveryStatus(orderId, 'delivered');
+    closeModal('statusModal');
+    await loadDeliveries();
+  }catch(err){
+    alert('Could not update delivery status: ' + err.message);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = 'Confirm';
+  }
+}
+
+/* ── SETTINGS ─────────────────────────────────────────────────────────── */
+function saveVehicleDetails(){
+  // NOTE: no backend field exists yet for vehicle details on the User
+  // model — this needs a PATCH /api/auth/me endpoint accepting a
+  // vehicleDetails field before this can actually persist.
+  alert('Vehicle details saving is not connected to the backend yet — this needs a profile-update endpoint to be built.');
+}
+
+/* ── LOAD REAL DATA ───────────────────────────────────────────────────── */
+async function loadDeliveries(){
+  try{
+    const raw = await fetchMyDeliveries();
+    MY_DELIVERIES = raw.map(mapOrder);
+    renderDashboard();
+    renderAssigned();
+    renderHistory();
+    renderActiveDelivery();
+    populateDropdown();
+  }catch(err){
+    console.error('Failed to load deliveries:', err.message);
+    document.getElementById('dashDeliveriesBody').innerHTML = `<div class="empty-state"><div class="emoji">⚠️</div>Could not load your deliveries. Please refresh.</div>`;
+  }
+}
+loadDeliveries();
+</script>
+</body>
+</html>
