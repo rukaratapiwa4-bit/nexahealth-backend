@@ -8,6 +8,9 @@ const orderRoutes = require('./routes/orderRoutes');
 const productRoutes = require('./routes/productRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const recallRoutes = require('./routes/recallRoutes');
+const complaintRoutes = require('./routes/complaintRoutes');
+const inspectionRoutes = require('./routes/inspectionRoutes');
 
 dotenv.config();
 connectDB();
@@ -25,6 +28,9 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/recalls', recallRoutes);
+app.use('/api/complaints', complaintRoutes);
+app.use('/api/inspections', inspectionRoutes);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
