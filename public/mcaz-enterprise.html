@@ -1800,10 +1800,18 @@
             <div class="mhead"><h3>Issue Recall Notice</h3><span class="mclose" onclick="closeModal('newRecallModal')"><i class="fa-solid fa-xmark"></i></span></div>
             <div class="mbody">
                 <div class="fgrid">
-                    <div class="fg"><label>Medicine / batch</label><input class="fc" id="rMed" placeholder="e.g. Amoxicillin 500mg Batch #X9901"></div>
-                    <div class="fg"><label>Recall class</label><select class="fc"><option>Class I — immediate health risk</option><option>Class II — potential health risk</option><option>Class III — unlikely health risk</option></select></div>
+                    <div class="fg"><label>Medicine name</label><input class="fc" id="rMedName" placeholder="e.g. Amoxicillin 500mg"></div>
+                    <div class="fg"><label>Batch number</label><input class="fc" id="rBatchNumber" placeholder="e.g. X9901"></div>
+                    <div class="fg full"><label>Recall class</label>
+                        <select class="fc" id="rClass">
+                            <option value="class_1">Class I — immediate health risk</option>
+                            <option value="class_2" selected>Class II — potential health risk</option>
+                            <option value="class_3">Class III — unlikely health risk</option>
+                        </select>
+                    </div>
                     <div class="fg full"><label>Reason</label><textarea class="fc" id="rReason" rows="2" placeholder="Contamination, counterfeit, quality failure..."></textarea></div>
                     <div class="fg full"><label>Action required from pharmacies</label><textarea class="fc" id="rAction" rows="2" placeholder="Cease dispensing, quarantine, return to supplier..."></textarea></div>
+                    <div class="fg full" style="background:var(--bg);padding:10px 12px;border-radius:9px;font-size:12px;color:var(--text-mut);">👉 Affected pharmacies are found automatically by scanning real orders for this exact batch number — no need to select them manually.</div>
                 </div>
             </div>
             <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newRecallModal')">Cancel</button><button class="btn btn-danger" onclick="issueRecall()"><i class="fa-solid fa-bullhorn"></i>Issue recall to all affected entities</button></div>
@@ -1853,7 +1861,7 @@
                     <div class="fg full"><label>Details</label><textarea class="fc" rows="3" placeholder="Describe the complaint..."></textarea></div>
                 </div>
             </div>
-            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newComplaintModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('newComplaintModal');alert('Complaint logged and assigned to available inspector.')"><i class="fa-solid fa-check"></i>Log complaint</button></div>
+            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newComplaintModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('newComplaintModal');alert('This form is not yet connected to the backend — it needs an entity-picker endpoint (list of real pharmacies/wholesalers) before complaints can be submitted with a real entity reference. Coming in the next backend batch.')"><i class="fa-solid fa-check"></i>Log complaint</button></div>
         </div>
     </div>
 
@@ -1888,7 +1896,7 @@
                     <div class="fg full"><label>Photo evidence</label><input type="file" class="fc" accept="image/*" multiple></div>
                 </div>
             </div>
-            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newInspModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('newInspModal');alert('Inspection report submitted. Digital signature recorded. Entity notified.')"><i class="fa-solid fa-clipboard-check"></i>Submit report</button></div>
+            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newInspModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('newInspModal');alert('This form is not yet connected to the backend — it needs an entity-picker endpoint (list of real pharmacies/wholesalers) before inspections can be scheduled against a real entity. Coming in the next backend batch.')"><i class="fa-solid fa-clipboard-check"></i>Submit report</button></div>
         </div>
     </div>
 
@@ -1961,6 +1969,69 @@
                 val: '$' + Number(o.total || 0).toFixed(2),
                 risk: o.riskScore || 0,
                 s: o.isFlagged ? 'warn' : 'ok',
+            };
+        }
+
+        /* ── RECALLS: fetch + map real backend Recall docs to UI shape ── */
+        async function fetchAllRecalls() {
+            const d = await apiRequest('/recalls');
+            return d?.recalls || [];
+        }
+        function mapRealRecallToUi(r) {
+            const notified = (r.affectedPharmacies || []).length;
+            const confirmed = (r.affectedPharmacies || []).filter(a => a.status !== 'notified').length;
+            return {
+                id: r._id,
+                med: r.medicineName,
+                batch: r.batchNumber,
+                cls: r.recallClass === 'class_1' ? 'Class I' : r.recallClass === 'class_3' ? 'Class III' : 'Class II',
+                date: new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                supplier: r.supplier?.businessName || r.supplier?.fullName || 'Unknown',
+                reason: r.reason,
+                notified,
+                confirmed,
+                pending: notified - confirmed,
+                recovered: r.recoveredUnits || 0,
+                target: r.targetRecoveryUnits || 0,
+                _realStatus: r.status,
+            };
+        }
+
+        /* ── COMPLAINTS: fetch + map real backend Complaint docs to UI shape ── */
+        async function fetchAllComplaints() {
+            const d = await apiRequest('/complaints');
+            return d?.complaints || [];
+        }
+        function mapRealComplaintToUi(c) {
+            return {
+                id: c._id,
+                cat: c.category,
+                from: c.submitterName || c.submittedBy?.fullName || 'Unknown',
+                about: c.aboutEntity?.businessName || c.aboutEntity?.fullName || 'Unknown entity',
+                date: new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                desc: c.description,
+                s: c.status,
+                prio: c.priority,
+                insp: c.assignedInspector?.fullName || null,
+            };
+        }
+
+        /* ── INSPECTIONS: fetch + map real backend Inspection docs to UI shape ── */
+        async function fetchAllInspections() {
+            const d = await apiRequest('/inspections');
+            return d?.inspections || [];
+        }
+        function mapRealInspectionToUi(i) {
+            return {
+                id: i._id,
+                entity: i.entity?.businessName || i.entity?.fullName || 'Unknown',
+                type: i.type ? i.type.charAt(0).toUpperCase() + i.type.slice(1) : 'Routine',
+                insp: i.inspector?.fullName || 'Unassigned',
+                date: new Date(i.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                findings: i.findings || null,
+                viol: i.violations !== undefined ? i.violations : null,
+                score: i.score !== undefined ? i.score : null,
+                s: i.status,
             };
         }
 
@@ -2044,7 +2115,7 @@
             if (r[v]) setTimeout(r[v], 20);
         }
 
-        document.querySelectorAll('.nav-item').forEach(n =>
+        document.querySelectorAll('.nav-item[data-view]').forEach(n =>
             n.addEventListener('click', () => goTo(n.dataset.view))
         );
         document.getElementById('menuToggle').addEventListener('click', () =>
@@ -2215,8 +2286,8 @@
                         </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
                             <span class="badge bdanger"><i class="fa-solid fa-triangle-exclamation"></i>Active recall</span>
-                            <button class="btn btn-outline btn-sm" onclick="alert('Escalating ${r.id}...')"><i class="fa-solid fa-arrow-up"></i>Escalate</button>
-                            <button class="btn btn-danger btn-sm" onclick="alert('Sending reminders to ${r.pending} pending entities for ${r.id}...')"><i class="fa-solid fa-bell"></i>Remind pending</button>
+                            <button class="btn btn-outline btn-sm" onclick="escalateRecall('${r.id}')"><i class="fa-solid fa-arrow-up"></i>Escalate</button>
+                            <button class="btn btn-danger btn-sm" onclick="remindPendingRecall('${r.id}')"><i class="fa-solid fa-bell"></i>Remind pending</button>
                         </div>
                     </div>
                     <div style="margin-bottom:8px;">
@@ -2688,27 +2759,60 @@
             alert(`Entity "${name}" registered successfully.`);
         }
 
-        function issueRecall() {
-            const med = document.getElementById('rMed').value.trim();
-            if (!med) { alert('Medicine/batch required.'); return; }
-            D.recalls.unshift({
-                id: `RC-${String(D.recalls.length+1).padStart(3,'0')}`,
-                batch: 'NEW',
-                med,
-                date: 'Today',
-                reason: document.getElementById('rReason').value || 'No reason provided',
-                cls: 'Class I',
-                notified: 0,
-                confirmed: 0,
-                pending: 0,
-                recovered: 0,
-                destroyed: 0,
-                target: 1000,
-                supplier: 'TBD'
-            });
-            closeModal('newRecallModal');
-            renderRecalls();
-            alert(`Recall issued for "${med}". All affected entities notified automatically.`);
+        async function issueRecall() {
+            const medicineName = document.getElementById('rMedName').value.trim();
+            const batchNumber = document.getElementById('rBatchNumber').value.trim();
+            const reason = document.getElementById('rReason').value.trim();
+            const actionRequired = document.getElementById('rAction').value.trim();
+            const recallClass = document.getElementById('rClass').value;
+
+            if (!medicineName || !batchNumber || !reason) {
+                alert('Medicine name, batch number, and reason are all required.');
+                return;
+            }
+
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Issuing recall...';
+
+            try {
+                const res = await apiRequest('/recalls', {
+                    method: 'POST',
+                    body: JSON.stringify({ medicineName, batchNumber, recallClass, reason, actionRequired }),
+                });
+                closeModal('newRecallModal');
+                await refreshRegulatorData();
+                renderRecalls();
+                alert(res?.message || `Recall issued for "${medicineName}".`);
+            } catch (err) {
+                alert('Could not issue recall: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function escalateRecall(recallId) {
+            try {
+                await apiRequest(`/recalls/${recallId}/status`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: 'escalated' }),
+                });
+                await refreshRegulatorData();
+                renderRecalls();
+                alert('Recall escalated.');
+            } catch (err) {
+                alert('Could not escalate recall: ' + err.message);
+            }
+        }
+        async function remindPendingRecall(recallId) {
+            try {
+                const res = await apiRequest(`/recalls/${recallId}/remind`, { method: 'POST' });
+                alert(res?.message || 'Reminder request sent.');
+            } catch (err) {
+                alert('Could not send reminder: ' + err.message);
+            }
         }
 
         /* ── NOTIFICATION DRAWER ────────────────────────────────────── */
@@ -2780,11 +2884,23 @@
 
         async function refreshRegulatorData() {
             try {
-                const realOrders = await fetchAllOrders().catch(() => []);
+                const [realOrders, realRecalls, realComplaints, realInspections] = await Promise.all([
+                    fetchAllOrders().catch(() => []),
+                    fetchAllRecalls().catch(() => []),
+                    fetchAllComplaints().catch(() => []),
+                    fetchAllInspections().catch(() => []),
+                ]);
+
                 if (realOrders.length) {
                     D.tx.length = 0;
                     realOrders.forEach(o => D.tx.push(mapRealOrderToTx(o)));
                 }
+                D.recalls.length = 0;
+                realRecalls.forEach(r => D.recalls.push(mapRealRecallToUi(r)));
+                D.complaints.length = 0;
+                realComplaints.forEach(c => D.complaints.push(mapRealComplaintToUi(c)));
+                D.inspections.length = 0;
+                realInspections.forEach(i => D.inspections.push(mapRealInspectionToUi(i)));
 
                 const kpiEl = document.getElementById('kpi-tx');
                 if (kpiEl) kpiEl.textContent = D.tx.length.toLocaleString();
@@ -2804,6 +2920,13 @@
                 if (typeof renderDash === 'function') renderDash();
                 if (document.getElementById('view-transactions')?.classList.contains('active') && typeof renderTx ===
                     'function') renderTx('all');
+                if (document.getElementById('view-recalls')?.classList.contains('active') && typeof renderRecalls === 'function') renderRecalls();
+                if (document.getElementById('view-complaints')?.classList.contains('active') && typeof renderComp === 'function') renderComp('all');
+                if (document.getElementById('view-inspections')?.classList.contains('active') && typeof renderInsp === 'function') renderInsp('all');
+
+                // Always keep nav badges current regardless of active view
+                if (typeof renderRecalls === 'function') { const b = document.getElementById('navRecallBadge'); if (b) { const active = D.recalls.filter(r => r.pending > 0).length; b.textContent = active; b.style.display = active ? 'inline-flex' : 'none'; } }
+                if (typeof renderComp === 'function') { const b = document.getElementById('navComplaintsBadge'); if (b) { const open = D.complaints.filter(c => c.s === 'open' || c.s === 'investigating').length; b.textContent = open; b.style.display = open ? 'inline-flex' : 'none'; } }
             } catch (_) { /* ignore */ }
         }
 
