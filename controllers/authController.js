@@ -395,3 +395,48 @@ exports.getMe = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+/**
+ * NexaHealth — ADD THIS to controllers/authController.js
+ *
+ * Paste this new export anywhere below the existing exports (e.g. right
+ * after exports.getAllUsers). Do NOT replace the whole file — this is
+ * an addition only. The file already imports `User` at the top, so no
+ * new imports are needed.
+ *
+ * Powers the entity-picker dropdown used when MCAZ logs a complaint or
+ * schedules an inspection — lightweight (no licence docs, no address),
+ * filterable by role and searchable by name.
+ */
+
+// ============================================
+// MCAZ: GET LIGHTWEIGHT ENTITY LIST (for pickers/dropdowns)
+// GET /api/auth/entities?type=pharmacy&search=city
+// ============================================
+exports.getEntitiesList = async (req, res) => {
+  try {
+    const { type, search } = req.query;
+
+    // Only real regulated entities belong in this picker — never list
+    // fellow MCAZ accounts or logistics drivers here.
+    const filter = { userType: { $in: ['pharmacy', 'wholesaler'] } };
+    if (type && ['pharmacy', 'wholesaler'].includes(type)) {
+      filter.userType = type;
+    }
+    if (search) {
+      filter.$or = [
+        { businessName: new RegExp(search, 'i') },
+        { fullName: new RegExp(search, 'i') },
+      ];
+    }
+
+    const entities = await User.find(filter)
+      .select('businessName fullName userType city isApproved isActive')
+      .sort({ businessName: 1 })
+      .limit(200);
+
+    return res.status(200).json({ success: true, count: entities.length, entities });
+  } catch (err) {
+    console.error('Get entities list error:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
