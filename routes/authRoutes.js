@@ -16,6 +16,7 @@ const {
   resetPassword,
   getPendingUsers,
   getAllUsers,
+  getEntitiesList,
   approveUser,
   rejectUser,
   deactivateUser,
@@ -36,6 +37,7 @@ router.get('/me', protect, getMe);
 // ===== ADMIN ROUTES (MCAZ only) =====
 router.get('/admin/pending-users', protect, mcazOnly, getPendingUsers);
 router.get('/admin/all-users', protect, mcazOnly, getAllUsers);
+router.get('/entities', protect, mcazOnly, getEntitiesList);
 router.patch('/admin/approve/:userId', protect, mcazOnly, approveUser);
 router.patch('/admin/reject/:userId', protect, mcazOnly, rejectUser);
 router.patch('/admin/deactivate/:userId', protect, mcazOnly, deactivateUser);
