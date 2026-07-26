@@ -1854,14 +1854,32 @@
             <div class="mhead"><h3>Log Complaint</h3><span class="mclose" onclick="closeModal('newComplaintModal')"><i class="fa-solid fa-xmark"></i></span></div>
             <div class="mbody">
                 <div class="fgrid">
-                    <div class="fg"><label>Complainant</label><input class="fc" placeholder="Name / pharmacy"></div>
-                    <div class="fg"><label>Entity complained about</label><input class="fc"></div>
-                    <div class="fg"><label>Category</label><select class="fc"><option>Product quality</option><option>Counterfeit suspicion</option><option>Pricing irregularity</option><option>Licence violation</option><option>Supply diversion</option></select></div>
-                    <div class="fg"><label>Priority</label><select class="fc"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
-                    <div class="fg full"><label>Details</label><textarea class="fc" rows="3" placeholder="Describe the complaint..."></textarea></div>
+                    <div class="fg"><label>Complainant name</label><input class="fc" id="cmpComplainant" placeholder="Name / pharmacy"></div>
+                    <div class="fg"><label>Entity complained about</label>
+                        <select class="fc" id="cmpEntity"><option value="">Loading entities...</option></select>
+                    </div>
+                    <div class="fg"><label>Category</label>
+                        <select class="fc" id="cmpCategory">
+                            <option value="product_quality">Product quality</option>
+                            <option value="counterfeit_suspicion">Counterfeit suspicion</option>
+                            <option value="pricing_irregularity">Pricing irregularity</option>
+                            <option value="licence_violation">Licence violation</option>
+                            <option value="supply_diversion">Supply diversion</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="fg"><label>Priority</label>
+                        <select class="fc" id="cmpPriority">
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div class="fg full"><label>Details</label><textarea class="fc" id="cmpDescription" rows="3" placeholder="Describe the complaint..."></textarea></div>
                 </div>
             </div>
-            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newComplaintModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('newComplaintModal');alert('This form is not yet connected to the backend — it needs an entity-picker endpoint (list of real pharmacies/wholesalers) before complaints can be submitted with a real entity reference. Coming in the next backend batch.')"><i class="fa-solid fa-check"></i>Log complaint</button></div>
+            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newComplaintModal')">Cancel</button><button class="btn btn-primary" onclick="submitComplaint(event)"><i class="fa-solid fa-check"></i>Log complaint</button></div>
         </div>
     </div>
 
@@ -1871,13 +1889,22 @@
             <div class="mhead"><h3>Schedule Inspection</h3><span class="mclose" onclick="closeModal('schedModal')"><i class="fa-solid fa-xmark"></i></span></div>
             <div class="mbody">
                 <div class="fgrid">
-                    <div class="fg"><label>Entity</label><select class="fc"><option>MedPharm Wholesale</option><option>ZimDrug Distributors</option><option>City Pharmacy</option><option>HealthLink Suppliers</option></select></div>
-                    <div class="fg"><label>Inspector</label><select class="fc"><option>Dr. R. Ncube</option><option>Ms. T. Dube</option><option>Mr. F. Moyo</option></select></div>
-                    <div class="fg"><label>Type</label><select class="fc"><option>Routine</option><option>Targeted</option><option>Follow-up</option><option>Unannounced</option></select></div>
-                    <div class="fg"><label>Scheduled date</label><input class="fc" type="date"></div>
+                    <div class="fg"><label>Entity</label>
+                        <select class="fc" id="schedEntity"><option value="">Loading entities...</option></select>
+                    </div>
+                    <div class="fg"><label>Type</label>
+                        <select class="fc" id="schedType">
+                            <option value="routine">Routine</option>
+                            <option value="targeted">Targeted</option>
+                            <option value="follow_up">Follow-up</option>
+                            <option value="unannounced">Unannounced</option>
+                        </select>
+                    </div>
+                    <div class="fg full"><label>Scheduled date</label><input class="fc" type="date" id="schedDate"></div>
+                    <div class="fg full" style="background:var(--bg);padding:10px 12px;border-radius:9px;font-size:12px;color:var(--text-mut);">👉 Defaults to you as the inspector — reassign later from the Inspections view once a real inspector-picker exists.</div>
                 </div>
             </div>
-            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('schedModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('schedModal');alert('Inspection scheduled. Inspector notified via SMS and email.')"><i class="fa-solid fa-calendar-check"></i>Schedule</button></div>
+            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('schedModal')">Cancel</button><button class="btn btn-primary" onclick="submitScheduleInspection(event)"><i class="fa-solid fa-calendar-check"></i>Schedule</button></div>
         </div>
     </div>
 
@@ -1887,16 +1914,26 @@
             <div class="mhead"><h3>Conduct Inspection</h3><span class="mclose" onclick="closeModal('newInspModal')"><i class="fa-solid fa-xmark"></i></span></div>
             <div class="mbody">
                 <div class="fgrid">
-                    <div class="fg"><label>Entity</label><select class="fc"><option>MedPharm Wholesale</option><option>ZimDrug Distributors</option><option>City Pharmacy</option></select></div>
-                    <div class="fg"><label>Inspector</label><select class="fc"><option>Dr. R. Ncube</option><option>Ms. T. Dube</option></select></div>
-                    <div class="fg"><label>Date</label><input class="fc" type="date"></div>
-                    <div class="fg"><label>Overall score (0–100)</label><input class="fc" type="number" min="0" max="100" placeholder="e.g. 87"></div>
-                    <div class="fg full"><label>Findings &amp; violations</label><textarea class="fc" rows="3" placeholder="Describe findings, violations, recommendations..."></textarea></div>
-                    <div class="fg full"><label>Corrective actions required</label><textarea class="fc" rows="2" placeholder="List required corrective actions and deadlines..."></textarea></div>
-                    <div class="fg full"><label>Photo evidence</label><input type="file" class="fc" accept="image/*" multiple></div>
+                    <div class="fg"><label>Entity</label>
+                        <select class="fc" id="conductEntity"><option value="">Loading entities...</option></select>
+                    </div>
+                    <div class="fg"><label>Type</label>
+                        <select class="fc" id="conductType">
+                            <option value="routine">Routine</option>
+                            <option value="targeted">Targeted</option>
+                            <option value="follow_up">Follow-up</option>
+                            <option value="unannounced">Unannounced</option>
+                        </select>
+                    </div>
+                    <div class="fg"><label>Date</label><input class="fc" type="date" id="conductDate"></div>
+                    <div class="fg"><label>Overall score (0–100)</label><input class="fc" type="number" min="0" max="100" placeholder="e.g. 87" id="conductScore"></div>
+                    <div class="fg full"><label>Findings &amp; violations</label><textarea class="fc" rows="3" placeholder="Describe findings, violations, recommendations..." id="conductFindings"></textarea></div>
+                    <div class="fg full"><label>Number of violations</label><input class="fc" type="number" min="0" placeholder="e.g. 2" id="conductViolations"></div>
+                    <div class="fg full"><label>Corrective actions required</label><textarea class="fc" rows="2" placeholder="List required corrective actions and deadlines..." id="conductCorrective"></textarea></div>
+                    <div class="fg full" style="background:var(--bg);padding:10px 12px;border-radius:9px;font-size:12px;color:var(--text-mut);">👉 Photo evidence, GPS, and digital signature capture are UI-only for now — the backend accepts these fields (Inspection.photoEvidence, gpsLocation, digitalSignature), but file upload and signature-capture UI haven't been built into this form yet.</div>
                 </div>
             </div>
-            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newInspModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('newInspModal');alert('This form is not yet connected to the backend — it needs an entity-picker endpoint (list of real pharmacies/wholesalers) before inspections can be scheduled against a real entity. Coming in the next backend batch.')"><i class="fa-solid fa-clipboard-check"></i>Submit report</button></div>
+            <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newInspModal')">Cancel</button><button class="btn btn-primary" onclick="submitInspectionReport(event)"><i class="fa-solid fa-clipboard-check"></i>Submit report</button></div>
         </div>
     </div>
 
@@ -2069,7 +2106,145 @@
         function sc(r) { return r >= 80 ? 'var(--danger)' : r >= 60 ? '#f97316' : r >= 40 ? 'var(--warning)' :
             'var(--success)'; }
 
-        function openModal(id) { document.getElementById(id).classList.add('show'); }
+        let ENTITIES_CACHE = null;
+        async function fetchEntitiesList() {
+            if (ENTITIES_CACHE) return ENTITIES_CACHE;
+            try {
+                const d = await apiRequest('/auth/entities');
+                ENTITIES_CACHE = d?.entities || [];
+            } catch (err) {
+                console.error('Failed to load entities list:', err.message);
+                ENTITIES_CACHE = [];
+            }
+            return ENTITIES_CACHE;
+        }
+        function entityOptionsHtml(entities) {
+            if (!entities.length) return '<option value="">No entities registered yet</option>';
+            return entities.map(e =>
+                `<option value="${e._id}">${e.businessName || e.fullName} (${e.userType})</option>`
+            ).join('');
+        }
+        async function populateEntityDropdown(selectId) {
+            const el = document.getElementById(selectId);
+            if (!el) return;
+            el.innerHTML = '<option value="">Loading entities...</option>';
+            const entities = await fetchEntitiesList();
+            el.innerHTML = entityOptionsHtml(entities);
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+            if (id === 'newComplaintModal') populateEntityDropdown('cmpEntity');
+            if (id === 'schedModal') populateEntityDropdown('schedEntity');
+            if (id === 'newInspModal') populateEntityDropdown('conductEntity');
+        }
+
+        async function submitComplaint(e) {
+            const btn = e.target.closest('button');
+            const aboutEntity = document.getElementById('cmpEntity').value;
+            const description = document.getElementById('cmpDescription').value.trim();
+            const submitterName = document.getElementById('cmpComplainant').value.trim();
+            const category = document.getElementById('cmpCategory').value;
+            const priority = document.getElementById('cmpPriority').value;
+
+            if (!aboutEntity) { alert('Please select an entity — none are registered yet if the list is empty.'); return; }
+            if (!description) { alert('Please describe the complaint.'); return; }
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging...';
+            try {
+                await apiRequest('/complaints', {
+                    method: 'POST',
+                    body: JSON.stringify({ aboutEntity, category, priority, description, submitterName: submitterName || undefined }),
+                });
+                closeModal('newComplaintModal');
+                await refreshRegulatorData();
+                renderComp('all');
+                alert('Complaint logged successfully.');
+            } catch (err) {
+                alert('Could not log complaint: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function submitScheduleInspection(e) {
+            const btn = e.target.closest('button');
+            const entityId = document.getElementById('schedEntity').value;
+            const type = document.getElementById('schedType').value;
+            const scheduledDate = document.getElementById('schedDate').value;
+
+            if (!entityId) { alert('Please select an entity — none are registered yet if the list is empty.'); return; }
+            if (!scheduledDate) { alert('Please choose a date.'); return; }
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scheduling...';
+            try {
+                await apiRequest('/inspections', {
+                    method: 'POST',
+                    body: JSON.stringify({ entityId, type, scheduledDate }),
+                });
+                closeModal('schedModal');
+                await refreshRegulatorData();
+                renderInsp('all');
+                alert('Inspection scheduled.');
+            } catch (err) {
+                alert('Could not schedule inspection: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function submitInspectionReport(e) {
+            const btn = e.target.closest('button');
+            const entityId = document.getElementById('conductEntity').value;
+            const type = document.getElementById('conductType').value;
+            const scheduledDate = document.getElementById('conductDate').value || new Date().toISOString().slice(0, 10);
+            const score = document.getElementById('conductScore').value;
+            const findings = document.getElementById('conductFindings').value.trim();
+            const violations = document.getElementById('conductViolations').value;
+            const correctiveActions = document.getElementById('conductCorrective').value.trim();
+
+            if (!entityId) { alert('Please select an entity — none are registered yet if the list is empty.'); return; }
+            if (!findings) { alert('Please describe the findings.'); return; }
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+            try {
+                // Create the inspection record, then immediately mark it complete
+                // with the walk-in report data — a single "conduct now" flow.
+                const created = await apiRequest('/inspections', {
+                    method: 'POST',
+                    body: JSON.stringify({ entityId, type, scheduledDate }),
+                });
+                const inspectionId = created?.inspection?._id;
+                if (inspectionId) {
+                    await apiRequest(`/inspections/${inspectionId}/complete`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                            score: score ? Number(score) : undefined,
+                            findings,
+                            violations: violations ? Number(violations) : undefined,
+                            correctiveActions: correctiveActions || undefined,
+                        }),
+                    });
+                }
+                closeModal('newInspModal');
+                await refreshRegulatorData();
+                renderInsp('all');
+                alert('Inspection report submitted.');
+            } catch (err) {
+                alert('Could not submit inspection report: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
 
         function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
