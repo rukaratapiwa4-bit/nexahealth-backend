@@ -393,6 +393,9 @@ tbody td{padding:14px 22px; border-top:1px solid var(--border); font-size:13.5px
             <thead><tr><th>Order</th><th>Pharmacy</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th></th></tr></thead>
             <tbody id="ordersBody"></tbody>
           </table>
+          <div id="ordersLoadMoreWrap" style="display:none; text-align:center; padding:16px;">
+            <button class="btn btn-outline btn-sm" id="ordersLoadMoreBtn" onclick="loadMoreOrders()">Load more orders</button>
+          </div>
         </div>
       </section>
 
@@ -620,7 +623,15 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
-async function fetchMyOrders(){ const d = await apiRequest('/orders'); return d?.orders || []; }
+let ordersPage = 1;
+const ORDERS_PAGE_SIZE = 50;
+let ordersHasMore = false;
+
+async function fetchMyOrders(page = 1){
+  const d = await apiRequest(`/orders?page=${page}&limit=${ORDERS_PAGE_SIZE}`);
+  ordersHasMore = !!d && Number(d.page) < Number(d.pages);
+  return d?.orders || [];
+}
 async function fetchMyProducts(){ const d = await apiRequest('/products/mine'); return d?.products || []; }
 async function confirmOrderReal(orderId){ return apiRequest(`/orders/${orderId}/status`, {method:'PATCH', body: JSON.stringify({status:'confirmed'})}); }
 
@@ -657,7 +668,7 @@ function mapRealProductToUiShape(p){
 async function loadRealData(){
   try {
     const [realOrders, realProducts] = await Promise.all([
-      fetchMyOrders().catch(()=>[]),
+      fetchMyOrders(1).catch(()=>[]),
       fetchMyProducts().catch(()=>[]),
     ]);
 
@@ -670,12 +681,37 @@ async function loadRealData(){
       realProducts.forEach(p => PRODUCTS.push(mapRealProductToUiShape(p)));
     }
 
+    ordersPage = 1;
+    const loadMoreWrap = document.getElementById('ordersLoadMoreWrap');
+    if (loadMoreWrap) loadMoreWrap.style.display = ordersHasMore ? 'block' : 'none';
+
     if (typeof renderOrders === 'function') renderOrders();
     if (typeof renderProducts === 'function') renderProducts();
     if (typeof populateRecallProducts === 'function') populateRecallProducts();
     if (typeof populateDropdowns === 'function') populateDropdowns();
   } catch (err) {
     console.error('Failed to load real data, dashboard is showing empty state as fallback:', err.message);
+  }
+}
+
+/* Fetches the next page of orders and appends them to ORDERS. */
+async function loadMoreOrders(){
+  const btn = document.getElementById('ordersLoadMoreBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  try {
+    const nextPage = ordersPage + 1;
+    const more = await fetchMyOrders(nextPage);
+    if (more.length) {
+      ordersPage = nextPage;
+      more.forEach(o => ORDERS.push(mapRealOrderToUiShape(o)));
+    }
+    if (typeof renderOrders === 'function') renderOrders();
+  } catch (err) {
+    console.error('Failed to load more orders:', err.message);
+  } finally {
+    const wrap = document.getElementById('ordersLoadMoreWrap');
+    if (wrap) wrap.style.display = ordersHasMore ? 'block' : 'none';
+    if (btn) { btn.disabled = false; btn.textContent = 'Load more orders'; }
   }
 }
 
