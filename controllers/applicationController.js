@@ -77,16 +77,32 @@ exports.createApplication = async (req, res) => {
 // ============================================
 exports.getIncomingApplications = async (req, res) => {
   try {
-    const { status = 'pending' } = req.query;
+    const { status = 'pending', page = 1, limit = 20 } = req.query;
 
-    const applications = await Application.find({
+    const filter = {
       wholesaler: req.user._id,
       ...(status !== 'all' && { status }),
-    })
-      .populate('pharmacy', 'fullName businessName city phone email')
-      .sort({ createdAt: -1 });
+    };
 
-    return res.status(200).json({ success: true, count: applications.length, applications });
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [applications, total] = await Promise.all([
+      Application.find(filter)
+        .populate('pharmacy', 'fullName businessName city phone email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Application.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: applications.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      applications,
+    });
   } catch (err) {
     console.error('Get incoming applications error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -99,11 +115,27 @@ exports.getIncomingApplications = async (req, res) => {
 // ============================================
 exports.getMyApplications = async (req, res) => {
   try {
-    const applications = await Application.find({ pharmacy: req.user._id })
-      .populate('wholesaler', 'fullName businessName city phone')
-      .sort({ createdAt: -1 });
+    const { page = 1, limit = 20 } = req.query;
+    const filter = { pharmacy: req.user._id };
+    const skip = (Number(page) - 1) * Number(limit);
 
-    return res.status(200).json({ success: true, count: applications.length, applications });
+    const [applications, total] = await Promise.all([
+      Application.find(filter)
+        .populate('wholesaler', 'fullName businessName city phone')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Application.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: applications.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      applications,
+    });
   } catch (err) {
     console.error('Get my applications error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
