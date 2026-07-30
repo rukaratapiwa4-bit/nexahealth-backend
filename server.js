@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/database');
+const { startCronJobs } = require('./utils/cronJobs');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -14,6 +15,7 @@ const inspectionRoutes = require('./routes/inspectionRoutes');
 
 dotenv.config();
 connectDB();
+startCronJobs();
 
 const app = express();
 
