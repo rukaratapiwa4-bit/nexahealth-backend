@@ -399,16 +399,12 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
-/* GET /api/orders returns orders scoped by role on the backend. For a
-   'logistics' user there is no dedicated filter yet (see note in
-   orderController.js), so we filter client-side to orders assigned to
-   this driver. Once a driver-specific backend filter exists, remove the
-   client-side filter and rely on the server instead. */
+/* GET /api/orders is scoped server-side by role — for a 'logistics' user
+   the backend now filters to orders where driver = req.user._id, so no
+   client-side filtering is needed here. */
 async function fetchMyDeliveries(){
   const d = await apiRequest('/orders');
-  const all = d?.orders || [];
-  const me = getCurrentUser();
-  return all.filter(o => o.driver && (o.driver._id === me.id || o.driver === me.id));
+  return d?.orders || [];
 }
 
 async function updateDeliveryStatus(orderId, status){
