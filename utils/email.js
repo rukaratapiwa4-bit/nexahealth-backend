@@ -283,10 +283,51 @@ const sendDeactivationEmail = async (email, name) => {
   }
 };
 
+/* ─────────────────────────────────────────────────────────────
+   6. LOW STOCK DIGEST EMAIL (used by utils/cronJobs.js)
+───────────────────────────────────────────────────────────── */
+const sendLowStockDigestEmail = async (email, name, items) => {
+  const rows = items
+    .map(
+      (p) => `
+      <div class="info-row">
+        <span class="info-label">${p.name}${p.batchNumber ? ` (Batch ${p.batchNumber})` : ''}</span>
+        <span class="info-value">${p.available} left · reorder below ${p.lowStockThreshold}</span>
+      </div>`
+    )
+    .join('');
+
+  const body = `
+    <div style="text-align:center;margin-bottom:22px;"><div style="font-size:52px;">📦</div></div>
+    <h1>Low stock alert</h1>
+    <p class="sub">Hi ${name}, ${items.length} product${items.length === 1 ? ' is' : 's are'} at or below its reorder threshold on NexaHealth.</p>
+    <div class="info-box">
+      ${rows}
+    </div>
+    <div class="notice notice-warn">
+      <strong>Restock soon</strong><br>
+      Pharmacies searching NexaHealth won't see these products once stock reaches zero.
+    </div>
+    <a href="${SITE_URL}" class="btn">Update stock levels →</a>
+    <hr class="divider">
+    <p style="font-size:12px;color:#94a3b8;text-align:center;">This is an automated daily digest — you'll only get one per day, even if stock stays low.</p>
+  `;
+
+  try {
+    await sendViaBrevo(email, `📦 NexaHealth — ${items.length} product${items.length === 1 ? '' : 's'} low on stock`, buildEmail(`${items.length} product${items.length === 1 ? '' : 's'} at or below reorder threshold.`, body));
+    console.log(`✅ Low stock digest sent to ${email}`);
+    return true;
+  } catch (err) {
+    console.error('❌ Low stock digest failed:', err.message);
+    return false;
+  }
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendApprovalEmail,
   sendResetEmail,
   sendRejectionEmail,
   sendDeactivationEmail,
+  sendLowStockDigestEmail,
 };
