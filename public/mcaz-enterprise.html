@@ -1930,7 +1930,17 @@
                     <div class="fg full"><label>Findings &amp; violations</label><textarea class="fc" rows="3" placeholder="Describe findings, violations, recommendations..." id="conductFindings"></textarea></div>
                     <div class="fg full"><label>Number of violations</label><input class="fc" type="number" min="0" placeholder="e.g. 2" id="conductViolations"></div>
                     <div class="fg full"><label>Corrective actions required</label><textarea class="fc" rows="2" placeholder="List required corrective actions and deadlines..." id="conductCorrective"></textarea></div>
-                    <div class="fg full" style="background:var(--bg);padding:10px 12px;border-radius:9px;font-size:12px;color:var(--text-mut);">👉 Photo evidence, GPS, and digital signature capture are UI-only for now — the backend accepts these fields (Inspection.photoEvidence, gpsLocation, digitalSignature), but file upload and signature-capture UI haven't been built into this form yet.</div>
+                    <div class="fg full">
+                        <label>Photo evidence</label>
+                        <input type="file" class="fc" id="conductPhotos" accept="image/*" multiple onchange="handleInspectionPhotos(this)">
+                        <div id="conductPhotoPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;"></div>
+                    </div>
+                    <div class="fg full">
+                        <label>GPS location</label>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="captureInspectionGps()"><i class="fa-solid fa-location-crosshairs"></i> Capture current location</button>
+                        <span id="conductGpsStatus" style="font-size:12px;color:var(--text-mut);margin-left:10px;">Not captured yet</span>
+                    </div>
+                    <div class="fg full" style="background:var(--bg);padding:10px 12px;border-radius:9px;font-size:12px;color:var(--text-mut);">👉 Digital signature capture (drawing pad) isn't built yet — photo evidence and GPS are now fully wired to the real backend.</div>
                 </div>
             </div>
             <div class="mfoot"><button class="btn btn-outline" onclick="closeModal('newInspModal')">Cancel</button><button class="btn btn-primary" onclick="submitInspectionReport(event)"><i class="fa-solid fa-clipboard-check"></i>Submit report</button></div>
@@ -2199,6 +2209,73 @@
             }
         }
 
+        /* ── Inspection photo evidence + GPS (real Cloudinary upload) ── */
+        let pendingInspectionPhotos = [];
+        let capturedGpsLocation = null;
+
+        async function handleInspectionPhotos(input) {
+            const files = Array.from(input.files || []);
+            if (!files.length) return;
+            input.disabled = true;
+            const preview = document.getElementById('conductPhotoPreview');
+            const loadingTag = document.createElement('span');
+            loadingTag.style.cssText = 'font-size:12px;color:var(--text-mut);';
+            loadingTag.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+            preview.appendChild(loadingTag);
+
+            try {
+                const formData = new FormData();
+                files.forEach(f => formData.append('files', f));
+                const token = getAuthToken();
+                const res = await fetch(`${API_BASE}/upload/multi?folder=inspections`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData,
+                });
+                const data = await res.json();
+                if (res.ok && data.urls) {
+                    pendingInspectionPhotos.push(...data.urls);
+                } else {
+                    alert('Photo upload failed: ' + (data.message || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Photo upload failed: ' + err.message);
+            } finally {
+                input.disabled = false;
+                input.value = '';
+                renderInspectionPhotoPreview();
+            }
+        }
+        function removeInspectionPhoto(i) {
+            pendingInspectionPhotos.splice(i, 1);
+            renderInspectionPhotoPreview();
+        }
+        function renderInspectionPhotoPreview() {
+            document.getElementById('conductPhotoPreview').innerHTML = pendingInspectionPhotos.map((src, i) => `
+                <div style="position:relative;">
+                    <img src="${src}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;border:1px solid var(--border);">
+                    <i class="fa-solid fa-circle-xmark" style="position:absolute;top:-6px;right:-6px;color:var(--danger);background:#fff;border-radius:50%;cursor:pointer;" onclick="removeInspectionPhoto(${i})"></i>
+                </div>`).join('');
+        }
+
+        function captureInspectionGps() {
+            const statusEl = document.getElementById('conductGpsStatus');
+            if (!navigator.geolocation) {
+                statusEl.textContent = 'GPS not supported on this device/browser.';
+                return;
+            }
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capturing...';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    capturedGpsLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    statusEl.textContent = `Captured: ${capturedGpsLocation.lat.toFixed(5)}, ${capturedGpsLocation.lng.toFixed(5)}`;
+                },
+                (err) => {
+                    statusEl.textContent = 'Could not get location: ' + err.message;
+                }
+            );
+        }
+
         async function submitInspectionReport(e) {
             const btn = e.target.closest('button');
             const entityId = document.getElementById('conductEntity').value;
@@ -2231,8 +2308,15 @@
                             findings,
                             violations: violations ? Number(violations) : undefined,
                             correctiveActions: correctiveActions || undefined,
+                            photoEvidence: pendingInspectionPhotos.length ? pendingInspectionPhotos : undefined,
+                            gpsLocation: capturedGpsLocation || undefined,
                         }),
                     });
+                    // Reset for next inspection
+                    pendingInspectionPhotos = [];
+                    capturedGpsLocation = null;
+                    document.getElementById('conductPhotoPreview').innerHTML = '';
+                    document.getElementById('conductGpsStatus').textContent = 'Not captured yet';
                 }
                 closeModal('newInspModal');
                 await refreshRegulatorData();
