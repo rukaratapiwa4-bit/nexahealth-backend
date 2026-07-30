@@ -167,6 +167,8 @@ exports.getOrders = async (req, res) => {
       filter.pharmacy = req.user._id;
     } else if (req.user.userType === 'wholesaler') {
       filter.wholesaler = req.user._id;
+    } else if (req.user.userType === 'logistics') {
+      filter.driver = req.user._id;
     }
     // mcaz sees all orders — no filter added
     // manager role reuses pharmacy filter logic if tied to a pharmacy account (see note below)
