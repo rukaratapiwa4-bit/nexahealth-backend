@@ -2021,7 +2021,8 @@
 
         /* ── RECALLS: fetch + map real backend Recall docs to UI shape ── */
         async function fetchAllRecalls() {
-            const d = await apiRequest('/recalls');
+            const d = await apiRequest(`/recalls?limit=${recallsLimit}`);
+            recallsHasMore = !!d && Number(d.page) < Number(d.pages);
             return d?.recalls || [];
         }
         function mapRealRecallToUi(r) {
@@ -2046,7 +2047,8 @@
 
         /* ── COMPLAINTS: fetch + map real backend Complaint docs to UI shape ── */
         async function fetchAllComplaints() {
-            const d = await apiRequest('/complaints');
+            const d = await apiRequest(`/complaints?limit=${complaintsLimit}`);
+            complaintsHasMore = !!d && Number(d.page) < Number(d.pages);
             return d?.complaints || [];
         }
         function mapRealComplaintToUi(c) {
@@ -2065,7 +2067,8 @@
 
         /* ── INSPECTIONS: fetch + map real backend Inspection docs to UI shape ── */
         async function fetchAllInspections() {
-            const d = await apiRequest('/inspections');
+            const d = await apiRequest(`/inspections?limit=${inspectionsLimit}`);
+            inspectionsHasMore = !!d && Number(d.page) < Number(d.pages);
             return d?.inspections || [];
         }
         function mapRealInspectionToUi(i) {
@@ -2083,7 +2086,15 @@
         }
 
         /* ── DATA — all empty; no mock ────────────────────────────── */
-        const D = {
+        /* Pagination for recalls/complaints/inspections. Since refreshRegulatorData()
+   re-fetches and fully replaces these arrays every 15s (to keep the live
+   feel), "Load more" works by growing the requested limit rather than
+   tracking a page number — that way the next automatic refresh keeps
+   showing everything the user has loaded so far instead of resetting it. */
+let recallsLimit = 100, complaintsLimit = 100, inspectionsLimit = 100;
+let recallsHasMore = false, complaintsHasMore = false, inspectionsHasMore = false;
+
+const D = {
             tx: [], // real orders from API
             entities: [],
             recalls: [],
@@ -2520,6 +2531,18 @@
         }
 
         /* ── RECALLS ────────────────────────────────────────────────── */
+        function loadMoreBtnHtml(kind, hasMore) {
+            if (!hasMore) return '';
+            return `<div style="text-align:center;padding:16px;"><button class="btn btn-outline btn-sm" onclick="loadMoreMcaz('${kind}')">Load more</button></div>`;
+        }
+
+        async function loadMoreMcaz(kind) {
+            if (kind === 'recalls') recallsLimit += 100;
+            else if (kind === 'complaints') complaintsLimit += 100;
+            else if (kind === 'inspections') inspectionsLimit += 100;
+            await refreshRegulatorData();
+        }
+
         function renderRecalls() {
             const badge = document.getElementById('navRecallBadge');
             const active = D.recalls.filter(r => r.pending > 0).length;
@@ -2565,9 +2588,8 @@
                     </div>
                 </div>`;
             }).join('');
+            body.innerHTML += loadMoreBtnHtml('recalls', recallsHasMore);
         }
-
-        /* ── COMPLAINTS ─────────────────────────────────────────────── */
         function renderComp(f) {
             const open = D.complaints.filter(c => c.s === 'open' || c.s === 'investigating').length;
             const badge = document.getElementById('navComplaintsBadge');
@@ -2602,6 +2624,7 @@
                     </div>
                 </div>
             `).join('');
+            body.innerHTML += loadMoreBtnHtml('complaints', complaintsHasMore);
         }
 
         function fComp(btn, f) {
@@ -2721,6 +2744,7 @@
                     </div>
                 </div>
             `).join('');
+            body.innerHTML += loadMoreBtnHtml('inspections', inspectionsHasMore);
         }
 
         function fInsp(btn, f) {
