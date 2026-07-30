@@ -47,17 +47,31 @@ exports.scheduleInspection = async (req, res) => {
 // ============================================
 exports.getInspections = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, page = 1, limit = 100 } = req.query;
     const filter = {};
     if (status) filter.status = status;
     if (['pharmacy', 'wholesaler'].includes(req.user.userType)) filter.entity = req.user._id;
 
-    const inspections = await Inspection.find(filter)
-      .populate('entity', 'businessName fullName')
-      .populate('inspector', 'fullName')
-      .sort({ scheduledDate: -1 });
+    const skip = (Number(page) - 1) * Number(limit);
 
-    return res.status(200).json({ success: true, count: inspections.length, inspections });
+    const [inspections, total] = await Promise.all([
+      Inspection.find(filter)
+        .populate('entity', 'businessName fullName')
+        .populate('inspector', 'fullName')
+        .sort({ scheduledDate: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Inspection.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: inspections.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      inspections,
+    });
   } catch (err) {
     console.error('Get inspections error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
