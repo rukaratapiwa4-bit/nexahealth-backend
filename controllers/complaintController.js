@@ -49,18 +49,32 @@ exports.createComplaint = async (req, res) => {
 // ============================================
 exports.getComplaints = async (req, res) => {
   try {
-    const { status, priority } = req.query;
+    const { status, priority, page = 1, limit = 100 } = req.query;
     const filter = {};
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
 
-    const complaints = await Complaint.find(filter)
-      .populate('submittedBy', 'fullName businessName')
-      .populate('aboutEntity', 'businessName fullName')
-      .populate('assignedInspector', 'fullName')
-      .sort({ createdAt: -1 });
+    const skip = (Number(page) - 1) * Number(limit);
 
-    return res.status(200).json({ success: true, count: complaints.length, complaints });
+    const [complaints, total] = await Promise.all([
+      Complaint.find(filter)
+        .populate('submittedBy', 'fullName businessName')
+        .populate('aboutEntity', 'businessName fullName')
+        .populate('assignedInspector', 'fullName')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Complaint.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: complaints.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      complaints,
+    });
   } catch (err) {
     console.error('Get complaints error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
