@@ -93,18 +93,32 @@ exports.createRecall = async (req, res) => {
 // ============================================
 exports.getRecalls = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, page = 1, limit = 100 } = req.query;
     const filter = {};
     if (status) filter.status = status;
     if (req.user.userType === 'wholesaler') filter.supplier = req.user._id;
 
-    const recalls = await Recall.find(filter)
-      .populate('supplier', 'businessName fullName')
-      .populate('issuedBy', 'fullName')
-      .populate('affectedPharmacies.pharmacy', 'businessName fullName city')
-      .sort({ createdAt: -1 });
+    const skip = (Number(page) - 1) * Number(limit);
 
-    return res.status(200).json({ success: true, count: recalls.length, recalls });
+    const [recalls, total] = await Promise.all([
+      Recall.find(filter)
+        .populate('supplier', 'businessName fullName')
+        .populate('issuedBy', 'fullName')
+        .populate('affectedPharmacies.pharmacy', 'businessName fullName city')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Recall.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: recalls.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      recalls,
+    });
   } catch (err) {
     console.error('Get recalls error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -117,11 +131,27 @@ exports.getRecalls = async (req, res) => {
 // ============================================
 exports.getMyRecalls = async (req, res) => {
   try {
-    const recalls = await Recall.find({ 'affectedPharmacies.pharmacy': req.user._id })
-      .populate('supplier', 'businessName fullName')
-      .sort({ createdAt: -1 });
+    const { page = 1, limit = 100 } = req.query;
+    const filter = { 'affectedPharmacies.pharmacy': req.user._id };
+    const skip = (Number(page) - 1) * Number(limit);
 
-    return res.status(200).json({ success: true, count: recalls.length, recalls });
+    const [recalls, total] = await Promise.all([
+      Recall.find(filter)
+        .populate('supplier', 'businessName fullName')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Recall.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: recalls.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      recalls,
+    });
   } catch (err) {
     console.error('Get my recalls error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
