@@ -236,13 +236,25 @@ exports.resetPassword = async (req, res) => {
 // ============================================
 exports.getPendingUsers = async (req, res) => {
   try {
-    const users = await User.find({ isApproved: false, isActive: true })
-      .select('-password -resetPasswordToken -resetPasswordExpires')
-      .sort({ createdAt: -1 });
+    const { page = 1, limit = 100 } = req.query;
+    const filter = { isApproved: false, isActive: true };
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('-password -resetPasswordToken -resetPasswordExpires')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      User.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       count: users.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
       users,
     });
   } catch (err) {
@@ -256,11 +268,26 @@ exports.getPendingUsers = async (req, res) => {
 // ============================================
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find()
-      .select('-password -resetPasswordToken -resetPasswordExpires')
-      .sort({ createdAt: -1 });
+    const { page = 1, limit = 100 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    return res.status(200).json({ success: true, count: users.length, users });
+    const [users, total] = await Promise.all([
+      User.find()
+        .select('-password -resetPasswordToken -resetPasswordExpires')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      User.countDocuments(),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      users,
+    });
   } catch (err) {
     console.error('Get all users error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
